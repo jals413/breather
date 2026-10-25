@@ -13,14 +13,14 @@ cask "breather" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :tahoe"
+  depends_on macos: :tahoe
 
   app "Breather.app"
 
   # Breather is open source but not notarized (that needs a paid Apple Developer account).
   # Clear the download quarantine so macOS opens it without the "can't be verified" prompt.
-  postflight do
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Breather.app"]
+  postflight_steps do
+    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/Breather.app"]
   end
 
   uninstall quit: "com.jalthakor.breather"
