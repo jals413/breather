@@ -221,9 +221,9 @@ private struct SocialCard: View {
             RadialGradient(colors: [Color(red: 0.32, green: 0.22, blue: 0.62).opacity(0.35), .clear],
                            center: UnitPoint(x: 0.08, y: 1.0), startRadius: 0, endRadius: 520)
 
-            screen
-                .frame(width: 520, height: size.height)
-                .offset(x: size.width - 520 - 56, y: 64)
+            macBook
+                .frame(width: 580 * 1.1)
+                .offset(x: size.width - 580 * 1.1 - 40, y: (size.height - 392) / 2)
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 14) {
@@ -255,38 +255,64 @@ private struct SocialCard: View {
         .clipped()
     }
 
-    /// The top of a MacBook display with the island grown out of its notch.
-    private var screen: some View {
-        let notch = CGSize(width: 150, height: 30)
-        return ZStack(alignment: .top) {
-            AuroraBackground(animated: false)
-            LinearGradient(colors: [.clear, Brand.night.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-            // A window you're working in, behind the island.
-            CodeWindow()
-                .frame(width: 400, height: 330)
-                .padding(.top, 160)
-            // Menu bar.
-            HStack(spacing: 14) {
-                Image(systemName: "apple.logo").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Text("9:41").font(.system(size: 12, weight: .medium))
+    /// A MacBook with the island grown out of its notch over the app you're working in.
+    private var macBook: some View {
+        let outer: CGFloat = 580, bezel: CGFloat = 12
+        let inner = outer - 2 * bezel
+        return VStack(spacing: 0) {
+            display
+                .frame(width: 1000, height: 625)
+                .scaleEffect(inner / 1000, anchor: .topLeading)
+                .frame(width: inner, height: inner * 0.625, alignment: .topLeading)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .padding([.horizontal, .top], bezel)
+                .padding(.bottom, 16)
+                .background(
+                    UnevenRoundedRectangle(topLeadingRadius: 22, bottomLeadingRadius: 6, bottomTrailingRadius: 6,
+                                           topTrailingRadius: 22, style: .continuous)
+                        .fill(Color(white: 0.045))
+                        .overlay(UnevenRoundedRectangle(topLeadingRadius: 22, bottomLeadingRadius: 6, bottomTrailingRadius: 6,
+                                                        topTrailingRadius: 22, style: .continuous)
+                            .strokeBorder(.white.opacity(0.13), lineWidth: 1))
+                )
+            // The base, with the thumb notch for opening the lid.
+            ZStack(alignment: .top) {
+                UnevenRoundedRectangle(topLeadingRadius: 2, bottomLeadingRadius: 14, bottomTrailingRadius: 14,
+                                       topTrailingRadius: 2, style: .continuous)
+                    .fill(LinearGradient(colors: [Color(white: 0.19), Color(white: 0.08)], startPoint: .top, endPoint: .bottom))
+                UnevenRoundedRectangle(bottomLeadingRadius: 6, bottomTrailingRadius: 6)
+                    .fill(Color(white: 0.05))
+                    .frame(width: 90, height: 5)
             }
-            .foregroundStyle(.white.opacity(0.85))
-            .padding(.horizontal, 16)
-            .frame(height: 30)
-            .background(.black.opacity(0.18))
-            SnapshotIsland(app: app, content: .headsUp(.short), notch: notch)
-                .scaleEffect(0.95, anchor: .top)
+            .frame(width: outer * 1.1, height: 16)
         }
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20, style: .continuous))
-        .padding(10)
-        .background(
-            UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30, style: .continuous)
-                .fill(Color(white: 0.06))
-                .overlay(UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30, style: .continuous)
-                    .strokeBorder(.white.opacity(0.12), lineWidth: 1))
-        )
-        .shadow(color: .black.opacity(0.55), radius: 40, y: 20)
+        .shadow(color: .black.opacity(0.6), radius: 40, y: 24)
+        .shadow(color: Brand.teal.opacity(0.18), radius: 60)
+    }
+
+    /// The display, laid out at 1000×625 like the website demo.
+    private var display: some View {
+        ZStack(alignment: .top) {
+            AuroraBackground(animated: false)
+            CodeWindow()
+                .frame(width: 680, height: 440)
+                .padding(.top, 150)
+            HStack(spacing: 18) {
+                Image(systemName: "apple.logo").font(.system(size: 15, weight: .semibold))
+                Text("Xcode").font(.system(size: 14, weight: .bold))
+                Text("File").font(.system(size: 14))
+                Text("Edit").font(.system(size: 14))
+                Text("View").font(.system(size: 14))
+                Spacer()
+                BreatherMark(color: .white).frame(width: 16, height: 16)
+                Text("9:41").font(.system(size: 14, weight: .medium))
+            }
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 18)
+            .frame(height: 32)
+            .background(.black.opacity(0.2))
+            SnapshotIsland(app: app, content: .headsUp(.short), notch: CGSize(width: 170, height: 32))
+        }
     }
 }
 
