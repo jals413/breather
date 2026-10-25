@@ -135,6 +135,8 @@ public enum LinkMessage: Codable, Equatable, Sendable {
     case state(MacState)
     case command(PhoneCommand)
     case tokens(PushTokens)
+    /// Phone → Mac: whether its Apple Watch has Breather and can be reached.
+    case deviceStatus(watchConnected: Bool)
 }
 
 /// A message on the wire. Pairing messages travel unsigned; everything after is HMAC-signed

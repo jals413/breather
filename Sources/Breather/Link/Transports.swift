@@ -99,6 +99,7 @@ final class BLEPeripheral: NSObject {
     private var receiveChunkers: [UUID: LinkChunker] = [:]
     private var pending: [Data] = []
     var onStatus: ((String) -> Void)?
+    var onSubscribersChanged: ((Int) -> Void)?
 
     init(handler: @escaping Handler) {
         self.handler = handler
@@ -162,12 +163,14 @@ extension BLEPeripheral: CBPeripheralManagerDelegate {
     nonisolated func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         MainActor.assumeIsolated {
             if !subscribers.contains(where: { $0.identifier == central.identifier }) { subscribers.append(central) }
+            onSubscribersChanged?(subscribers.count)
         }
     }
 
     nonisolated func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         MainActor.assumeIsolated {
             subscribers.removeAll { $0.identifier == central.identifier }
+            onSubscribersChanged?(subscribers.count)
         }
     }
 

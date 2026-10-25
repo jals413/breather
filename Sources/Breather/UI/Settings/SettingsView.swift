@@ -164,58 +164,129 @@ struct PaneHeader: View {
 
 struct SettingsView: View {
     let app: AppModel
-    @State private var pane: SettingsPane? = .general
+    @State private var pane: SettingsPane = .general
     @State private var query = ""
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $pane) {
-                ForEach(SettingsPane.groups) { group in
-                    let panes = group.panes.filter { $0.matches(query) }
-                    if !panes.isEmpty {
-                        Section {
-                            ForEach(panes) { pane in
-                                HStack(spacing: 8) {
-                                    SettingsBadge(symbol: pane.symbol, tint: pane.tint)
-                                    Text(pane.title)
-                                }
-                                .tag(pane)
+        HStack(spacing: 0) {
+            SettingsSidebar(pane: $pane, query: $query)
+                .frame(width: 228)
+                .padding(.leading, 10)
+                .padding(.top, 34)      // clears the window's traffic lights
+                .padding(.bottom, 10)
+            detail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .ignoresSafeArea(.container, edges: .top)
+        .frame(minWidth: 780, minHeight: 560)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        Group {
+            switch pane {
+            case .general: GeneralPane(app: app)
+            case .schedule: SchedulePane(app: app)
+            case .strictness: StrictnessPane(app: app)
+            case .breakScreen: BreakScreenPane(app: app)
+            case .messages: MessagesPane(app: app)
+            case .smartPause: SmartPausePane(app: app)
+            case .notch: NotchPane(app: app)
+            case .reminders: RemindersPane(app: app)
+            case .privacy: PrivacyPane(app: app)
+            case .devices: DevicesPane(app: app)
+            case .profiles: ProfilesPane(app: app)
+            case .automations: AutomationsPane(app: app)
+            case .about: AboutPane(app: app)
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.top, 22)
+    }
+}
+
+/// Our own sidebar, drawn as a card with exactly the same corner radius and fill as the
+/// grouped settings cards (12pt). The system sidebar uses a different radius.
+private struct SettingsSidebar: View {
+    @Binding var pane: SettingsPane
+    @Binding var query: String
+    @Environment(\.colorScheme) private var scheme
+
+    /// Measured from the grouped Form cards so the sidebar reads as the same material.
+    static let cardRadius: CGFloat = 12
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Search", text: $query)
+                    .textFieldStyle(.plain)
+                    .onChange(of: query) { _, q in
+                        if !pane.matches(q), let first = SettingsPane.allCases.first(where: { $0.matches(q) }) { pane = first }
+                    }
+                if !query.isEmpty {
+                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                        .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(SettingsPane.groups) { group in
+                        let panes = group.panes.filter { $0.matches(query) }
+                        if !panes.isEmpty {
+                            if let title = group.title {
+                                Text(title)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 8)
+                                    .padding(.top, 10)
+                                    .padding(.bottom, 2)
                             }
-                        } header: {
-                            if let title = group.title { Text(title) }
+                            ForEach(panes) { item in
+                                SidebarRow(pane: item, selected: item == pane) { pane = item }
+                            }
                         }
                     }
                 }
             }
-            .searchable(text: $query, placement: .sidebar, prompt: "Search")
-            .onChange(of: query) { _, q in
-                // Jump to the first match so typing feels like System Settings.
-                if let current = pane, current.matches(q) { return }
-                pane = SettingsPane.allCases.first { $0.matches(q) } ?? pane
-            }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 215)
-        } detail: {
-            Group {
-                switch pane ?? .general {
-                case .general: GeneralPane(app: app)
-                case .schedule: SchedulePane(app: app)
-                case .strictness: StrictnessPane(app: app)
-                case .breakScreen: BreakScreenPane(app: app)
-                case .messages: MessagesPane(app: app)
-                case .smartPause: SmartPausePane(app: app)
-                case .notch: NotchPane(app: app)
-                case .reminders: RemindersPane(app: app)
-                case .privacy: PrivacyPane(app: app)
-                case .devices: DevicesPane(app: app)
-                case .profiles: ProfilesPane(app: app)
-                case .automations: AutomationsPane(app: app)
-                case .about: AboutPane(app: app)
-                }
-            }
-            .formStyle(.grouped)
-            .navigationTitle("")
+            .scrollIndicators(.never)
         }
-        .frame(minWidth: 760, minHeight: 560)
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: Self.cardRadius, style: .continuous)
+                .fill(scheme == .dark ? Color.white.opacity(0.045) : Color.white)
+        )
+    }
+}
+
+private struct SidebarRow: View {
+    var pane: SettingsPane
+    var selected: Bool
+    var action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                SettingsBadge(symbol: pane.symbol, tint: pane.tint)
+                Text(pane.title).font(.system(size: 13))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? Color.accentColor.opacity(0.85) : (hovering ? Color.primary.opacity(0.06) : .clear))
+            )
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
 

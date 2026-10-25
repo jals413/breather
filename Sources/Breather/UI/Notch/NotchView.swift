@@ -340,25 +340,29 @@ struct DashboardView: View {
                 }
             }
 
+            // Same four icons as the menu bar popover.
             HStack(spacing: 8) {
-                ActionTile("Break now", symbol: "eye.fill", tint: Brand.mint) { app.breakNow() }
-                if case .paused = engine.phase {
-                    ActionTile("Resume", symbol: "play.fill", tint: Brand.mint, active: true) { app.resume() }
+                ActionTile("Break now", symbol: "eye.fill") { app.breakNow() }
+                if isPaused {
+                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { app.resume() }
                 } else {
-                    PauseTile(app: app)
+                    ActionTile("Pause", symbol: "pause.fill", tint: .white) { app.togglePause() }
                 }
-                ActionTile(engine.skipNextPending ? "Skipping" : "Skip next", symbol: "forward.end.fill",
-                           tint: Brand.amber, active: engine.skipNextPending) {
+                ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                     app.engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
-                ActionTile("Stats", symbol: "chart.bar.fill", tint: Brand.sky) { app.openStats() }
-                ActionTile("Settings", symbol: "gearshape.fill", tint: .white) { app.openSettings() }
+                ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { app.engine.startBreak(kind: .long) }
             }
             .actionTileTitles(false)  // icon-only in the notch; titles show as tooltips
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
+    }
+
+    private var isPaused: Bool {
+        if case .paused = app.engine.phase { return true }
+        return false
     }
 
     private var ringColor: Color {
@@ -371,19 +375,3 @@ struct DashboardView: View {
     }
 }
 
-private struct PauseTile: View {
-    let app: AppModel
-
-    var body: some View {
-        Menu {
-            ForEach(PauseOption.all) { option in
-                Button(option.title) { app.pause(option) }
-            }
-        } label: {
-            ActionTile("Pause", symbol: "pause.fill", tint: .white) {}.label
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-    }
-}

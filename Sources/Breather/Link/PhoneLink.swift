@@ -24,6 +24,12 @@ final class PhoneLink {
     private(set) var pairingCode: String?
     private(set) var pairingExpires: Date?
     private(set) var connectedCount = 0
+    private(set) var bluetoothCount = 0
+    /// Reported by the phone: its Apple Watch has Breather and is reachable.
+    private(set) var watchConnected = false
+
+    /// A paired phone is connected over Bluetooth or the local network right now.
+    var phoneConnected: Bool { !devices.isEmpty && (connectedCount + bluetoothCount) > 0 }
     private(set) var bluetoothStatus = "Off"
     private(set) var lastSent: MacState?
 
@@ -67,6 +73,7 @@ final class PhoneLink {
             lan?.onConnectionsChanged = { [weak self] count in self?.connectedCount = count }
             ble = BLEPeripheral { [weak self] data, reply in self?.receive(data, reply: reply) }
             ble?.onStatus = { [weak self] status in self?.bluetoothStatus = status }
+            ble?.onSubscribersChanged = { [weak self] count in self?.bluetoothCount = count }
             lan?.start()
             ble?.start()
         } else if !enabled && isRunning {
@@ -75,6 +82,8 @@ final class PhoneLink {
             lan = nil
             ble = nil
             connectedCount = 0
+            bluetoothCount = 0
+            watchConnected = false
             bluetoothStatus = "Off"
         }
     }
@@ -145,6 +154,8 @@ final class PhoneLink {
                 devices[index].tokens = tokens
                 saveDevices()
             }
+        case .deviceStatus(let watch):
+            watchConnected = watch
         case .state, .pairAccepted, .pairRejected:
             break
         }

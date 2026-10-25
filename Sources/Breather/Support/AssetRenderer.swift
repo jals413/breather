@@ -29,8 +29,32 @@ enum AssetRenderer {
             }
             exit(0)
         }
+        if let i = args.firstIndex(of: "--render-settings"), i + 1 < args.count {
+            renderSettings(to: URL(fileURLWithPath: args[i + 1]))
+            return
+        }
         if let i = args.firstIndex(of: "--render-snapshots"), i + 1 < args.count {
             renderSnapshots(to: URL(fileURLWithPath: args[i + 1]))
+            exit(0)
+        }
+    }
+
+    /// Opens the real Settings window and captures it from its own view tree (no screen-recording permission).
+    static func renderSettings(to url: URL) {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(app: AppModel.shared)))
+        window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.setContentSize(NSSize(width: 760, height: 560))
+        window.center()
+        window.orderFrontRegardless()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            // The window server can photograph an app's own windows without Screen Recording permission.
+            typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+            guard let handle = dlopen(nil, RTLD_NOW), let sym = dlsym(handle, "CGWindowListCreateImage") else { exit(2) }
+            let create = unsafeBitCast(sym, to: CreateImage.self)
+            // .optionIncludingWindow = 1 << 3, .boundsIgnoreFraming = 1 << 0 | .bestResolution = 1 << 3
+            guard let image = create(.null, 1 << 3, UInt32(window.windowNumber), (1 << 0) | (1 << 3))?.takeRetainedValue() else { exit(3) }
+            try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: url)
             exit(0)
         }
     }

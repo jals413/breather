@@ -6,6 +6,13 @@ import WatchConnectivity
 @MainActor
 final class WatchBridge: NSObject {
     var onCommand: ((PhoneCommand) -> Void)?
+    var onStatusChanged: ((Bool) -> Void)?
+
+    /// Breather is installed on a paired Apple Watch and the session is up.
+    var isWatchConnected: Bool {
+        WCSession.isSupported() && WCSession.default.activationState == .activated
+            && WCSession.default.isPaired && WCSession.default.isWatchAppInstalled
+    }
 
     func activate() {
         guard WCSession.isSupported() else { return }
@@ -23,7 +30,13 @@ final class WatchBridge: NSObject {
 }
 
 extension WatchBridge: WCSessionDelegate {
-    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        Task { @MainActor in self.onStatusChanged?(self.isWatchConnected) }
+    }
+
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+        Task { @MainActor in self.onStatusChanged?(self.isWatchConnected) }
+    }
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
     nonisolated func sessionDidDeactivate(_ session: WCSession) { session.activate() }
 

@@ -68,6 +68,7 @@ final class PhoneModel {
             if wasEmpty && !routes.isEmpty { self.sayHello() }
         }
         watch.onCommand = { [weak self] command in self?.send(command) }
+        watch.onStatusChanged = { [weak self] connected in self?.sendSigned(.deviceStatus(watchConnected: connected)) }
         liveActivity.onTokens = { [weak self] tokens in self?.sendSigned(.tokens(tokens)) }
         link.start()
         watch.activate()
@@ -129,6 +130,7 @@ final class PhoneModel {
 
     private func sayHello() {
         sendSigned(.hello(deviceID: deviceID, deviceName: UIDevice.current.name))
+        sendSigned(.deviceStatus(watchConnected: watch.isWatchConnected))
         // The Mac answers a hello with its state. Silence while connected means it forgot us.
         Task {
             try? await Task.sleep(for: .seconds(8))

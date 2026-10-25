@@ -199,6 +199,7 @@ public struct ActionTile: View {
     public var action: () -> Void
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.actionTileTitles) private var showsTitle
 
     public init(_ title: String, symbol: String, tint: Color = Brand.mint, active: Bool = false,
                 action: @escaping () -> Void) {
@@ -212,9 +213,11 @@ public struct ActionTile: View {
     public var body: some View {
         Button(action: action) { label }
             .buttonStyle(.plain)
-            #if !os(watchOS)
+            #if os(macOS)
             .onHover { hovering = $0 }
-            .help(title)
+            .pointerStyle(.link)
+            // Icon-only tiles name themselves instantly on hover.
+            .hoverLabel(showsTitle ? nil : title, visible: hovering && isEnabled)
             #endif
             .accessibilityLabel(title)
             .opacity(isEnabled ? 1 : 0.4)
@@ -273,35 +276,45 @@ public struct PillButton: View {
     public var style: Style
     /// Share a row's width equally with its neighbours.
     public var stretch: Bool
+    public var fontSize: CGFloat
+    /// Shown above the button on hover (for icon-only pills).
+    public var hint: String?
+    public var tint: Color?
     public var action: () -> Void
     @State private var hovering = false
 
-    public init(_ title: String, symbol: String? = nil, style: Style = .normal, stretch: Bool = false, action: @escaping () -> Void) {
+    public init(_ title: String, symbol: String? = nil, style: Style = .normal, stretch: Bool = false,
+                fontSize: CGFloat = 13, hint: String? = nil, tint: Color? = nil, action: @escaping () -> Void) {
         self.title = title
         self.symbol = symbol
         self.style = style
         self.stretch = stretch
+        self.fontSize = fontSize
+        self.hint = hint
+        self.tint = tint
         self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                if let symbol { Image(systemName: symbol).font(.system(size: 12, weight: .semibold)) }
+                if let symbol { Image(systemName: symbol).font(.system(size: fontSize - 1, weight: .semibold)) }
                 if !title.isEmpty {
-                    Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
+                    Text(title).font(.system(size: fontSize, weight: .semibold)).lineLimit(1).fixedSize()
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, title.isEmpty ? 10 : 12)
             .padding(.vertical, 7)
             .frame(maxWidth: stretch ? .infinity : nil)
-            .foregroundStyle(style == .primary ? Brand.night : .white.opacity(style == .subtle ? 0.62 : 0.95))
+            .foregroundStyle(tint ?? (style == .primary ? Brand.night : .white.opacity(style == .subtle ? 0.62 : 0.95)))
             .background(Capsule().fill(background.opacity(hovering ? 1 : 0.88)))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        #if !os(watchOS)
+        #if os(macOS)
         .onHover { hovering = $0 }
+        .pointerStyle(.link)
+        .hoverLabel(hint, visible: hovering)
         #endif
     }
 
@@ -311,6 +324,41 @@ public struct PillButton: View {
         case .normal: .white.opacity(0.14)
         case .subtle: .white.opacity(0.07)
         }
+    }
+}
+
+// MARK: - Hover labels
+
+/// A small dark label that appears above a control while hovered — instant, unlike system tooltips.
+public struct HoverLabel: View {
+    public var text: String
+    public init(_ text: String) { self.text = text }
+    public var body: some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color(white: 0.06).opacity(0.94)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+            .fixedSize()
+    }
+}
+
+public extension View {
+    /// Floats `text` just above the view while `visible`; nil shows nothing.
+    func hoverLabel(_ text: String?, visible: Bool) -> some View {
+        self
+            .overlay(alignment: .top) {
+                if let text, visible {
+                    HoverLabel(text)
+                        .offset(y: -28)
+                        .transition(.opacity.combined(with: .offset(y: 3)))
+                        .allowsHitTesting(false)
+                }
+            }
+            .zIndex(visible ? 10 : 0)
+            .animation(.easeOut(duration: 0.12), value: visible)
     }
 }
 
