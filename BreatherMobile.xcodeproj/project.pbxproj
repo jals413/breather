@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		051291798B99C9DFC4F1B38D /* BreatherNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 59DA14E4CA932CF13688478D /* BreatherNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0BF7F0F4729EB0D8F347E125 /* StatsDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0381162F122ADA8B5C5A8EC /* StatsDashboard.swift */; };
 		0F0BD922F91E55F6A8546349 /* PairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50658D150ECCFA93E0BE8EF9 /* PairView.swift */; };
 		1A555BC7C3FAC5559745B48C /* BreatherKit in Frameworks */ = {isa = PBXBuildFile; productRef = D9BE530F0A6FBD2AC43E4927 /* BreatherKit */; };
 		1E0E39063F440547631719D1 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB331598C54810C4D5C5193 /* SharedStore.swift */; };
@@ -138,6 +139,7 @@
 		C18A7A15FD4852BC07E31E79 /* NotificationService-Paid.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-Paid.entitlements"; sourceTree = "<group>"; };
 		D6406E3875DA0E2D92276673 /* BreatherLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreatherLiveActivity.swift; sourceTree = "<group>"; };
 		EC40EE3E03D654140669767D /* BreatherWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BreatherWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0381162F122ADA8B5C5A8EC /* StatsDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDashboard.swift; sourceTree = "<group>"; };
 		FAF60C9764B16C3749A2E8C4 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -213,6 +215,7 @@
 			children = (
 				FAF60C9764B16C3749A2E8C4 /* HomeView.swift */,
 				50658D150ECCFA93E0BE8EF9 /* PairView.swift */,
+				F0381162F122ADA8B5C5A8EC /* StatsDashboard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -516,6 +519,7 @@
 				FCCB5DB5A85EA53200BCDAAD /* PhoneModel.swift in Sources */,
 				D893EC803B66288871B2ACC9 /* ScreenTimeBlocker.swift in Sources */,
 				1E0E39063F440547631719D1 /* SharedStore.swift in Sources */,
+				0BF7F0F4729EB0D8F347E125 /* StatsDashboard.swift in Sources */,
 				BB65FFBE5A566DCCD936D03C /* WatchBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

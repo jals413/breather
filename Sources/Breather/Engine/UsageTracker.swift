@@ -24,14 +24,22 @@ struct DailyStats: Codable, Equatable {
 
     /// 0–100. Up to 60 for keeping sessions near your rhythm, up to 40 for taking breaks.
     func score(includingCurrent current: TimeInterval = 0) -> Int {
+        let parts = scoreParts(includingCurrent: current)
+        return parts.rhythm + parts.breaks
+    }
+
+    /// The two halves of the score: rhythm (of 60) and breaks taken (of 40).
+    func scoreParts(includingCurrent current: TimeInterval = 0) -> (rhythm: Int, breaks: Int) {
         let all = sessions + (current > 60 ? [current] : [])
-        guard !all.isEmpty || taken + skipped > 0 else { return 0 }
+        guard !all.isEmpty || taken + skipped > 0 else { return (0, 0) }
         let target = max(60, targetSeconds)
         // Each session scores 1 when at or under target, decaying as it runs long.
         let discipline = all.isEmpty ? 1 : all.map { min(1, target / max($0, 1)) }.reduce(0, +) / Double(all.count)
         let total = taken + skipped
         let adherence = total == 0 ? 1 : Double(taken) / Double(total)
-        return Int((discipline * 60 + adherence * 40).rounded())
+        let rhythm = Int((discipline * 60).rounded())
+        let breaks = Int((discipline * 60 + adherence * 40).rounded()) - rhythm
+        return (rhythm, breaks)
     }
 }
 
@@ -110,6 +118,24 @@ final class UsageTracker {
     }
 
     var score: Int { today.score(includingCurrent: currentSession) }
+
+    /// Everything the phone's Stats dashboard shows.
+    func snapshot(macName: String) -> StatsSnapshot {
+        let parts = today.scoreParts(includingCurrent: currentSession)
+        let week = history(days: 7).map { day in
+            StatsSnapshot.Day(day: day.day, screenSeconds: day.screenSeconds,
+                              score: day.day == today.day ? score : day.score(), taken: day.taken, skipped: day.skipped)
+        }
+        func top(_ dict: [String: TimeInterval], names: [String: String]) -> [StatsSnapshot.Usage] {
+            dict.sorted { $0.value > $1.value }.prefix(6).map { StatsSnapshot.Usage(id: $0.key, name: names[$0.key] ?? $0.key, seconds: $0.value) }
+        }
+        return StatsSnapshot(score: score, rhythmPoints: parts.rhythm, breakPoints: parts.breaks,
+                             screenSeconds: today.screenSeconds, taken: today.taken, skipped: today.skipped,
+                             longestSession: max(today.longestSession, currentSession), medianSession: today.medianSession,
+                             currentSession: currentSession, targetSeconds: today.targetSeconds, week: week,
+                             topApps: top(today.appSeconds, names: today.appNames),
+                             topSites: top(today.siteSeconds, names: [:]), macName: macName)
+    }
 
     func save() {
         lastSave = .now

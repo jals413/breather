@@ -34,6 +34,9 @@ final class PhoneLink {
     private(set) var lastSent: MacState?
 
     @ObservationIgnored var onCommand: ((PhoneCommand) -> Void)?
+    /// Supplies the stats dashboard data (sent on connect and every few minutes).
+    @ObservationIgnored var statsProvider: (() -> StatsSnapshot)?
+    @ObservationIgnored private var lastStatsAt = Date.distantPast
     @ObservationIgnored private var secret: SymmetricKey?
     @ObservationIgnored private var lan: LANServer?
     @ObservationIgnored private var ble: BLEPeripheral?
@@ -134,6 +137,15 @@ final class PhoneLink {
         if changed { apns.deliver(state, previous: previous, to: devices) }
     }
 
+    /// Sends fresh stats now, or on a 5-minute cadence when `force` is false.
+    func publishStats(force: Bool = false) {
+        guard isRunning, !devices.isEmpty, force || Date.now.timeIntervalSince(lastStatsAt) > 300,
+              let stats = statsProvider?(), let data = try? LinkEnvelope.seal(.stats(stats), secret: secret) else { return }
+        lastStatsAt = .now
+        lan?.broadcast(data)
+        ble?.broadcast(data)
+    }
+
     // MARK: Messages in
 
     private func receive(_ data: Data, reply: @escaping (Data) -> Void) {
@@ -146,6 +158,7 @@ final class PhoneLink {
             devices[index].lastSeen = .now
             saveDevices()
             if let state = lastSent, let data = try? LinkEnvelope.seal(.state(state), secret: secret) { reply(data) }
+            if let stats = statsProvider?(), let data = try? LinkEnvelope.seal(.stats(stats), secret: secret) { reply(data) }
         case .command(let command):
             onCommand?(command)
         case .tokens(let tokens):
@@ -156,7 +169,7 @@ final class PhoneLink {
             }
         case .deviceStatus(let watch):
             watchConnected = watch
-        case .state, .pairAccepted, .pairRejected:
+        case .state, .pairAccepted, .pairRejected, .stats:
             break
         }
     }

@@ -102,6 +102,12 @@ final class AppModel {
         registerHotKeys()
         LoginItem.sync(enabled: store.settings.launchAtLogin)
         phone.onCommand = { [weak self] command in self?.handle(command) }
+        phone.statsProvider = { [weak self] in
+            guard let self else { return StatsSnapshot(score: 0, rhythmPoints: 0, breakPoints: 0, screenSeconds: 0, taken: 0, skipped: 0,
+                                                      longestSession: 0, medianSession: 0, currentSession: 0, targetSeconds: 1200,
+                                                      week: [], topApps: [], topSites: [], macName: "Mac") }
+            return self.usage.snapshot(macName: self.phone.macName)
+        }
         configurePhone(store.settings)
         baseProfileID = store.settings.activeProfileID
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -200,6 +206,8 @@ final class AppModel {
         var state = MacState(mode: .working, detail: statusTitle, takenToday: log.takenToday, score: usage.score,
                              workSeconds: s.workSeconds, profile: activeProfile?.name, macName: phone.macName,
                              blockPhone: s.phoneBlockDuringBreaks)
+        state.profiles = s.profiles.map { ProfileSummary(id: $0.id.uuidString, name: $0.name, symbol: $0.symbol) }
+        state.activeProfileID = s.activeProfileID?.uuidString
         switch engine.phase {
         case .working:
             state.nextBreakAt = now.addingTimeInterval(engine.timeUntilBreak)
@@ -227,6 +235,8 @@ final class AppModel {
     private func handle(_ command: PhoneCommand) {
         switch command {
         case .breakNow: breakNow()
+        case .longBreak: engine.startBreak(kind: .long)
+        case .setProfile(let id): if let uuid = UUID(uuidString: id) { applyProfile(uuid) }
         case .breakFor(let minutes): customBreak(minutes: minutes)
         case .snooze(let minutes): snooze(minutes * 60)
         case .skipNext: if !engine.skipNextPending { engine.toggleSkipNext() }
@@ -292,7 +302,10 @@ final class AppModel {
             engine.absorbUpcomingBreak(false)
         }
         nudgeIfOvertime(now: now)
-        if store.settings.phoneLinkEnabled { phone.publish(phoneState(now: now)) }
+        if store.settings.phoneLinkEnabled {
+            phone.publish(phoneState(now: now))
+            phone.publishStats()
+        }
         usage.tick(now: now, dt: dt, engine: engine, settings: settings)
 
         announceSmartPauseChanges(signals.pauseReasons)
@@ -366,6 +379,7 @@ final class AppModel {
             runEndAutomations()
             // A snooze ends the overlay but not the work session.
             if completed { usage.endSession(completed: true) }
+            phone.publishStats(force: true)
             if completed {
                 log.append(BreakLogEntry(date: .now, outcome: .taken, kind: session.kind, seconds: session.duration))
                 if settings.soundEnabled { Sound.play(settings.breakEndSound, volume: settings.soundVolume) }

@@ -23,12 +23,12 @@ struct HomeView: View {
                     header
                     if model.needsRepair { repairBanner }
                     if onBreak, let state = model.state {
-                        BreakHero(state: state)
+                        BreakHero(state: state) { model.send($0) }
                     } else {
                         StatusHero(state: model.state)
                     }
                     ActionGrid(model: model)
-                    if let state = model.state, !onBreak { today(state) }
+                    profiles
                     phoneSettings
                     blockApps
                     macCard
@@ -37,6 +37,8 @@ struct HomeView: View {
                 .padding(.bottom, 30)
             }
             .scrollIndicators(.hidden)
+            // Content fades softly under the clock instead of colliding with it.
+            .scrollEdgeEffectStyle(.soft, for: .top)
         }
         .foregroundStyle(.white)
         .animation(.easeInOut(duration: 0.6), value: onBreak)
@@ -53,16 +55,8 @@ struct HomeView: View {
             BreatherMark(color: Brand.mint, rippleOpacity: 0.6).frame(width: 26, height: 26)
             Text(Brand.name).font(.system(size: 26, weight: .bold))
             Spacer()
-            HStack(spacing: 6) {
-                Circle().fill(model.isConnected ? Brand.mint : BrandStyle.tertiaryText).frame(width: 7, height: 7)
-                Text(model.isConnected ? (model.mac?.name ?? "Mac") : "Not connected")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(BrandStyle.secondaryText)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(BrandStyle.cardFill))
+            DeviceChip(symbol: "laptopcomputer", connected: model.isConnected)
+            DeviceChip(symbol: "applewatch", connected: model.watchConnected)
         }
         .padding(.top, 8)
     }
@@ -81,17 +75,24 @@ struct HomeView: View {
         .brandCard()
     }
 
-    private func today(_ state: MacState) -> some View {
-        VStack(spacing: 8) {
-            BrandSectionLabel("Today")
-            HStack {
-                BrandStat("\(state.takenToday)", label: "breaks", tint: Brand.mint)
-                Divider().frame(height: 34).overlay(BrandStyle.cardStroke)
-                BrandStat("\(state.score)", label: "screen score")
-                Divider().frame(height: 34).overlay(BrandStyle.cardStroke)
-                BrandStat(state.profile ?? "Custom", label: "profile")
+    @ViewBuilder
+    private var profiles: some View {
+        if let list = model.state?.profiles, !list.isEmpty {
+            VStack(spacing: 8) {
+                BrandSectionLabel("Profile")
+                ScrollView(.horizontal) {
+                    HStack(spacing: 10) {
+                        ForEach(list) { profile in
+                            ProfileCard(profile: profile, active: profile.id == model.state?.activeProfileID) {
+                                model.send(.setProfile(id: profile.id))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                }
+                .scrollIndicators(.hidden)
+                .disabled(!model.isConnected)
             }
-            .brandCard(padding: 14)
         }
     }
 
@@ -198,6 +199,7 @@ private struct StatusHero: View {
 /// During a break the phone shows the Mac's break: halo, countdown, message, breathing cue.
 private struct BreakHero: View {
     let state: MacState
+    var send: (PhoneCommand) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -231,6 +233,12 @@ private struct BreakHero: View {
                 Text(state.breakMessage ?? "Look away from your screens.")
                     .font(.system(size: 24, weight: .semibold))
                     .multilineTextAlignment(.center)
+
+                HStack(spacing: 10) {
+                    PillButton("+5 min", symbol: "clock.arrow.circlepath", style: .normal) { send(.snooze(minutes: 5)) }
+                    PillButton("End break", symbol: "checkmark", style: .primary) { send(.endBreak) }
+                }
+                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20)
@@ -245,27 +253,74 @@ private func progress(_ state: MacState?, _ date: Date) -> Double {
     return max(0, min(1, range.upperBound.timeIntervalSince(date) / total))
 }
 
+/// The same four icons, in the same order, as the Mac's menu bar and notch.
 private struct ActionGrid: View {
     let model: PhoneModel
 
     var body: some View {
         let mode = model.state?.mode
+        let paused = mode == .paused
+        let onBreak = mode == .onBreak
         HStack(spacing: 10) {
-            if mode == .onBreak {
-                ActionTile("+5 min", symbol: "clock.arrow.circlepath", tint: Brand.amber) { model.send(.snooze(minutes: 5)) }
-                ActionTile("End break", symbol: "checkmark", tint: Brand.mint) { model.send(.endBreak) }
-            } else {
-                ActionTile("Break now", symbol: "eye.fill") { model.send(.breakNow) }
-                ActionTile("5 min", symbol: "cup.and.saucer.fill", tint: Brand.sky) { model.send(.breakFor(minutes: 5)) }
-                if mode == .paused {
-                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { model.send(.resume) }
-                } else {
-                    ActionTile("Pause", symbol: "pause.fill", tint: .white) { model.send(.pause(minutes: 30)) }
-                }
-                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+            ActionTile("Break now", symbol: "eye.fill") { model.send(.breakNow) }
+                .disabled(onBreak)
+            ActionTile(paused ? "Resume" : "Pause", symbol: paused ? "play.fill" : "pause.fill", tint: .white, active: paused) {
+                model.send(paused ? .resume : .pause(minutes: 60))
             }
+            ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+            ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { model.send(.longBreak) }
+                .disabled(onBreak)
         }
+        .actionTileTitles(false)
         .disabled(!model.isConnected)
+    }
+}
+
+/// Mac / Watch connection at a glance: mint when connected.
+private struct DeviceChip: View {
+    var symbol: String
+    var connected: Bool
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol).font(.system(size: 12, weight: .semibold))
+            Circle().frame(width: 6, height: 6)
+        }
+        .foregroundStyle(connected ? Brand.mint : BrandStyle.tertiaryText)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Capsule().fill(BrandStyle.cardFill))
+        .accessibilityLabel(connected ? "Connected" : "Not connected")
+    }
+}
+
+private struct ProfileCard: View {
+    let profile: ProfileSummary
+    let active: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    BrandBadge(color: active ? Brand.mint : .white.opacity(0.7), symbol: profile.symbol, size: 34)
+                    Spacer()
+                    if active {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.mint)
+                    }
+                }
+                Text(profile.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+            }
+            .frame(width: 130, alignment: .leading)
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: BrandStyle.tileRadius, style: .continuous)
+                    .fill(active ? Brand.mint.opacity(0.12) : BrandStyle.cardFill)
+                    .overlay(RoundedRectangle(cornerRadius: BrandStyle.tileRadius, style: .continuous)
+                        .strokeBorder(active ? Brand.mint.opacity(0.6) : BrandStyle.cardStroke, lineWidth: active ? 1.5 : 1))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

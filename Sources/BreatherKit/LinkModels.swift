@@ -33,6 +33,9 @@ public struct MacState: Codable, Equatable, Sendable {
     /// Whether the phone should block distracting apps during this break.
     public var blockPhone: Bool
     public var sentAt: Date
+    /// The Mac's saved profiles, so the phone can show and switch them.
+    public var profiles: [ProfileSummary]?
+    public var activeProfileID: String?
 
     public init(mode: Mode, detail: String, nextBreakAt: Date? = nil, breakStart: Date? = nil, breakEnd: Date? = nil,
                 breakTitle: String? = nil, breakMessage: String? = nil, isLongBreak: Bool = false, pausedUntil: Date? = nil,
@@ -60,7 +63,8 @@ public struct MacState: Codable, Equatable, Sendable {
     public func differsMeaningfully(from other: MacState?) -> Bool {
         guard let other else { return true }
         if mode != other.mode || detail != other.detail || breakEnd != other.breakEnd || pausedUntil != other.pausedUntil
-            || takenToday != other.takenToday || profile != other.profile || blockPhone != other.blockPhone {
+            || takenToday != other.takenToday || profile != other.profile || blockPhone != other.blockPhone
+            || activeProfileID != other.activeProfileID || profiles != other.profiles {
             return true
         }
         switch (nextBreakAt, other.nextBreakAt) {
@@ -78,9 +82,92 @@ public struct MacState: Codable, Equatable, Sendable {
                                               macName: "MacBook Pro", blockPhone: true)
 }
 
+public struct ProfileSummary: Codable, Equatable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var name: String
+    public var symbol: String
+    public init(id: String, name: String, symbol: String) {
+        self.id = id
+        self.name = name
+        self.symbol = symbol
+    }
+}
+
+/// A day-and-week summary of screen habits, sent to the phone for its Stats dashboard.
+public struct StatsSnapshot: Codable, Equatable, Sendable {
+    public struct Day: Codable, Equatable, Sendable, Identifiable {
+        public var day: String          // yyyy-MM-dd
+        public var screenSeconds: TimeInterval
+        public var score: Int
+        public var taken: Int
+        public var skipped: Int
+        public var id: String { day }
+        public init(day: String, screenSeconds: TimeInterval, score: Int, taken: Int, skipped: Int) {
+            self.day = day
+            self.screenSeconds = screenSeconds
+            self.score = score
+            self.taken = taken
+            self.skipped = skipped
+        }
+    }
+
+    public struct Usage: Codable, Equatable, Sendable, Identifiable {
+        public var id: String
+        public var name: String
+        public var seconds: TimeInterval
+        public init(id: String, name: String, seconds: TimeInterval) {
+            self.id = id
+            self.name = name
+            self.seconds = seconds
+        }
+    }
+
+    public var score: Int
+    /// Out of 60: how close work stretches stay to the rhythm.
+    public var rhythmPoints: Int
+    /// Out of 40: breaks taken vs skipped.
+    public var breakPoints: Int
+    public var screenSeconds: TimeInterval
+    public var taken: Int
+    public var skipped: Int
+    public var longestSession: TimeInterval
+    public var medianSession: TimeInterval
+    public var currentSession: TimeInterval
+    public var targetSeconds: TimeInterval
+    /// Oldest first, including today.
+    public var week: [Day]
+    public var topApps: [Usage]
+    public var topSites: [Usage]
+    public var macName: String
+    public var generatedAt: Date
+
+    public init(score: Int, rhythmPoints: Int, breakPoints: Int, screenSeconds: TimeInterval, taken: Int, skipped: Int,
+                longestSession: TimeInterval, medianSession: TimeInterval, currentSession: TimeInterval,
+                targetSeconds: TimeInterval, week: [Day], topApps: [Usage], topSites: [Usage], macName: String,
+                generatedAt: Date = .now) {
+        self.score = score
+        self.rhythmPoints = rhythmPoints
+        self.breakPoints = breakPoints
+        self.screenSeconds = screenSeconds
+        self.taken = taken
+        self.skipped = skipped
+        self.longestSession = longestSession
+        self.medianSession = medianSession
+        self.currentSession = currentSession
+        self.targetSeconds = targetSeconds
+        self.week = week
+        self.topApps = topApps
+        self.topSites = topSites
+        self.macName = macName
+        self.generatedAt = generatedAt
+    }
+}
+
 /// What the phone or Watch can ask the Mac to do.
 public enum PhoneCommand: Codable, Equatable, Sendable {
     case breakNow
+    case longBreak
+    case setProfile(id: String)
     case breakFor(minutes: Double)
     case snooze(minutes: Double)
     case skipNext
@@ -137,6 +224,8 @@ public enum LinkMessage: Codable, Equatable, Sendable {
     case tokens(PushTokens)
     /// Phone → Mac: whether its Apple Watch has Breather and can be reached.
     case deviceStatus(watchConnected: Bool)
+    /// Mac → phone: today's and this week's stats for the dashboard.
+    case stats(StatsSnapshot)
 }
 
 /// A message on the wire. Pairing messages travel unsigned; everything after is HMAC-signed

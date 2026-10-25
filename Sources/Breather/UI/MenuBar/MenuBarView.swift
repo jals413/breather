@@ -112,7 +112,7 @@ struct MenuBarView: View {
         let phone = app.phone
         let linked = app.store.settings.phoneLinkEnabled && !phone.devices.isEmpty
         return HStack(spacing: 6) {
-            PillButton("", symbol: "power", style: .subtle, hint: "Quit Breather") { NSApp.terminate(nil) }
+            PillButton("", symbol: "power", style: .subtle, hint: "Quit") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
             Spacer()
             if linked {

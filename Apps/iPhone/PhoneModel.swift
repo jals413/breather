@@ -20,6 +20,10 @@ final class PhoneModel {
     static let shared = PhoneModel()
 
     private(set) var state: MacState? = SharedStore.state
+    private(set) var stats: StatsSnapshot? = SharedStore.stats
+    private(set) var watchConnected = false
+    enum AppTab: Hashable { case home, stats }
+    var selectedTab: AppTab = .home
     private(set) var mac: PairedMac?
     private(set) var routes: Set<LinkClient.Route> = []
     private(set) var pairingStatus: String?
@@ -68,7 +72,10 @@ final class PhoneModel {
             if wasEmpty && !routes.isEmpty { self.sayHello() }
         }
         watch.onCommand = { [weak self] command in self?.send(command) }
-        watch.onStatusChanged = { [weak self] connected in self?.sendSigned(.deviceStatus(watchConnected: connected)) }
+        watch.onStatusChanged = { [weak self] connected in
+            self?.watchConnected = connected
+            self?.sendSigned(.deviceStatus(watchConnected: connected))
+        }
         liveActivity.onTokens = { [weak self] tokens in self?.sendSigned(.tokens(tokens)) }
         link.start()
         watch.activate()
@@ -111,7 +118,9 @@ final class PhoneModel {
         needsRepair = false
         UserDefaults.standard.removeObject(forKey: Self.macKey)
         state = nil
+        stats = nil
         SharedStore.state = nil
+        SharedStore.stats = nil
         liveActivity.endAll()
         blocker.unblock()
         WidgetCenter.shared.reloadAllTimelines()
@@ -131,10 +140,12 @@ final class PhoneModel {
     private func sayHello() {
         sendSigned(.hello(deviceID: deviceID, deviceName: UIDevice.current.name))
         sendSigned(.deviceStatus(watchConnected: watch.isWatchConnected))
-        // The Mac answers a hello with its state. Silence while connected means it forgot us.
+        // The Mac answers a hello with its state. Hearing nothing verifiable since then,
+        // while connected, means it forgot us.
+        let saidHello = Date.now
         Task {
             try? await Task.sleep(for: .seconds(8))
-            if mac != nil, isConnected, Date.now.timeIntervalSince(lastVerified) > 8 { needsRepair = true }
+            if mac != nil, isConnected, lastVerified < saidHello { needsRepair = true }
         }
     }
 
@@ -162,6 +173,9 @@ final class PhoneModel {
             pairingStatus = reason
         case .state(let newState):
             apply(newState)
+        case .stats(let snapshot):
+            stats = snapshot
+            SharedStore.stats = snapshot
         default:
             break
         }

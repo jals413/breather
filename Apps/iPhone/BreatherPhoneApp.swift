@@ -15,6 +15,10 @@ struct BreatherPhoneApp: App {
                 .preferredColorScheme(.dark)  // Breather is a night brand on every device
                 // breather-phone://pair?code=123456 — from the QR code on the Mac.
                 .onOpenURL { url in
+                    if url.host() == "stats" || url.host() == "home" {
+                        model.selectedTab = url.host() == "stats" ? .stats : .home
+                        return
+                    }
                     guard url.host() == "pair",
                           let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                             .queryItems?.first(where: { $0.name == "code" })?.value else { return }
@@ -47,7 +51,11 @@ struct RootView: View {
         if model.mac == nil {
             PairView(model: model)
         } else {
-            HomeView(model: model)
+            @Bindable var model = model
+            TabView(selection: $model.selectedTab) {
+                Tab("Breather", systemImage: "eye.fill", value: PhoneModel.AppTab.home) { HomeView(model: model) }
+                Tab("Stats", systemImage: "chart.bar.fill", value: PhoneModel.AppTab.stats) { StatsDashboard(model: model) }
+            }
         }
     }
 }

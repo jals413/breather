@@ -6,6 +6,18 @@ import Foundation
 enum SharedStore {
     static let groupID = "group.com.jalthakor.breather"
     private static let stateKey = "mac.state"
+    private static let statsKey = "mac.stats"
+
+    static var stats: StatsSnapshot? {
+        get { defaults.data(forKey: statsKey).flatMap { try? LinkCoding.decoder.decode(StatsSnapshot.self, from: $0) } }
+        set {
+            if let newValue, let data = try? LinkCoding.encoder.encode(newValue) {
+                defaults.set(data, forKey: statsKey)
+            } else {
+                defaults.removeObject(forKey: statsKey)
+            }
+        }
+    }
 
     static var defaults: UserDefaults { UserDefaults(suiteName: groupID) ?? .standard }
 

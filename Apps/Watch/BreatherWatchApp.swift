@@ -96,20 +96,19 @@ struct WatchHomeView: View {
     private var actions: some View {
         let mode = model.state?.mode
         let columns = [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)]
+        let onBreak = mode == .onBreak
+        // Same four icons, same order, as the Mac and iPhone.
         return LazyVGrid(columns: columns, spacing: 6) {
-            if mode == .onBreak {
-                ActionTile("+5 min", symbol: "clock.arrow.circlepath", tint: Brand.amber) { model.send(.snooze(minutes: 5)) }
-                ActionTile("End break", symbol: "checkmark", tint: Brand.mint) { model.send(.endBreak) }
+            ActionTile("Break now", symbol: "eye.fill") { model.send(.breakNow) }
+                .disabled(onBreak)
+            if mode == .paused {
+                ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { model.send(.resume) }
             } else {
-                ActionTile("Break now", symbol: "eye.fill") { model.send(.breakNow) }
-                if mode == .paused {
-                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { model.send(.resume) }
-                } else {
-                    ActionTile("Pause", symbol: "pause.fill", tint: .white) { model.send(.pause(minutes: 30)) }
-                }
-                ActionTile("5 min break", symbol: "cup.and.saucer.fill", tint: Brand.sky) { model.send(.breakFor(minutes: 5)) }
-                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+                ActionTile("Pause", symbol: "pause.fill", tint: .white) { model.send(.pause(minutes: 60)) }
             }
+            ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+            ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { model.send(.longBreak) }
+                .disabled(onBreak)
         }
         .actionTileTitles(false)  // icon-only, like the notch
         .disabled(!model.phoneReachable)
