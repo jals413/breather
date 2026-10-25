@@ -75,46 +75,53 @@ private struct ReminderRow: View {
     }
 }
 
-// MARK: - Planned breaks & automations
+// MARK: - Planned breaks & automations (sections used by the Schedule and Automations panes)
 
-struct PlannedPane: View {
+struct PlannedBreaksSection: View {
+    let app: AppModel
+
+    var body: some View {
+        @Bindable var store = app.store
+        Section {
+            ForEach($store.settings.plannedBreaks) { $planned in
+                PlannedRow(planned: $planned) { store.settings.plannedBreaks.removeAll { $0.id == planned.id } }
+            }
+            HStack {
+                Spacer()
+                Button("Add Planned Break") {
+                    store.settings.plannedBreaks.append(PlannedBreak(title: "Walk", message: "Get some fresh air.",
+                                                                     minuteOfDay: 16 * 60, durationMinutes: 10))
+                }
+            }
+        } header: {
+            Text("Planned breaks")
+        } footer: {
+            Text("Breaks at a fixed time, like lunch. You get a heads-up 2 minutes before, and a regular break due just before is skipped so they don't stack. If you're busy, Breather waits up to 45 minutes, then offers Start or Skip today.")
+        }
+    }
+}
+
+struct AutomationsSection: View {
     let app: AppModel
     @State private var shortcuts: [String] = []
 
     var body: some View {
         @Bindable var store = app.store
-        Form {
-            PaneHeader(pane: .planned)
-            Section {
-                ForEach($store.settings.plannedBreaks) { $planned in
-                    PlannedRow(planned: $planned) { store.settings.plannedBreaks.removeAll { $0.id == planned.id } }
+        Section {
+            Toggle("Run automations", isOn: $store.settings.automations.enabled)
+            if store.settings.automations.enabled {
+                ShortcutPicker(title: "When a break starts, run Shortcut", selection: $store.settings.automations.startShortcut, names: shortcuts)
+                ShortcutPicker(title: "When a break ends, run Shortcut", selection: $store.settings.automations.endShortcut, names: shortcuts)
+                Picker("Script language", selection: $store.settings.automations.language) {
+                    ForEach(Automations.Language.allCases) { Text($0.title).tag($0) }
                 }
-                HStack {
-                    Spacer()
-                    Button("Add Planned Break") {
-                        store.settings.plannedBreaks.append(PlannedBreak(title: "Walk", message: "Get some fresh air.",
-                                                                         minuteOfDay: 16 * 60, durationMinutes: 10))
-                    }
-                }
-            } header: {
-                Text("Planned breaks")
-            } footer: {
-                Text("Fixed-time breaks, like lunch. If you're in a call, Breather waits up to 45 minutes for it to end. You'll get a heads-up 2 minutes before.")
+                ScriptField(title: "Script on break start", text: $store.settings.automations.startScript)
+                ScriptField(title: "Script on break end", text: $store.settings.automations.endScript)
             }
-
-            Section {
-                Toggle("Run automations", isOn: $store.settings.automations.enabled)
-                if store.settings.automations.enabled {
-                    ShortcutPicker(title: "When a break starts, run Shortcut", selection: $store.settings.automations.startShortcut, names: shortcuts)
-                    ShortcutPicker(title: "When a break ends, run Shortcut", selection: $store.settings.automations.endShortcut, names: shortcuts)
-                    ScriptField(title: "AppleScript on break start", text: $store.settings.automations.startScript)
-                    ScriptField(title: "AppleScript on break end", text: $store.settings.automations.endScript)
-                }
-            } header: {
-                Text("Automations")
-            } footer: {
-                Text("Pause music, turn on Do Not Disturb, dim lights — anything a Shortcut can do. You can also control Breather from Shortcuts, Raycast or Terminal with links like breather://break, breather://pause?minutes=30, breather://profile?name=Deep%20Work.")
-            }
+        } header: {
+            Text("When breaks start and end")
+        } footer: {
+            Text("Pause music, turn on Do Not Disturb, dim the lights: anything a Shortcut or script can do.")
         }
         .task {
             shortcuts = await Task.detached { AutomationRunner.shortcutNames() }.value
@@ -134,6 +141,13 @@ private struct PlannedRow: View {
                 TextField("Message", text: $planned.message)
                 DatePicker("Time", selection: timeBinding, displayedComponents: .hourAndMinute)
                 LabeledSlider(title: "Length", value: $planned.durationMinutes, range: 1...90, step: 1) { "\(Int($0)) min" }
+                HStack(spacing: 6) {
+                    Button("Weekdays") { planned.weekdays = [1, 2, 3, 4, 5] }
+                    Button("Weekends") { planned.weekdays = [0, 6] }
+                    Button("Every day") { planned.weekdays = Set(0...6) }
+                }
+                .buttonStyle(.link)
+                .font(.caption)
                 HStack(spacing: 4) {
                     ForEach(weekdayOrder, id: \.self) { day in
                         let on = planned.weekdays.contains(day)

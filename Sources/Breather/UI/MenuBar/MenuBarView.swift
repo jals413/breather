@@ -57,6 +57,20 @@ struct MenuBarView: View {
                     .background(Card())
             }
 
+            if !engine.isOnBreak {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Take a break for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        ForEach([1.0, 2, 5, 10, 15], id: \.self) { minutes in
+                            Chip(title: "\(Int(minutes)) min") { app.customBreak(minutes: minutes) }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(Card())
+            }
+
             if !isPaused {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Pause for").font(.caption.weight(.medium)).foregroundStyle(.secondary)

@@ -109,6 +109,8 @@ final class BreakEngine {
     private(set) var breaksSinceLong = 0
     private(set) var snoozesThisCycle = 0
     private(set) var skipNextPending = false
+    /// Set when a planned break is close; the next regular break is silently dropped.
+    private(set) var absorbNext = false
     private(set) var advanceSkipsToday = 0
     private(set) var headsUpShown = false
     /// When the last undoable natural break happened, and the state before it.
@@ -173,7 +175,7 @@ final class BreakEngine {
 
         switch phase {
         case .onBreak(let session):
-            if now >= session.end { finishBreak(session, completed: true) }
+            if now >= session.end && !settings.keepBreakOpenUntilEnded { finishBreak(session, completed: true) }
             return
 
         case .paused(let until):
@@ -248,6 +250,12 @@ final class BreakEngine {
 
         if remaining <= 0 {
             holdStarted = nil
+            if absorbNext {
+                // A planned break is about to start; don't stack a regular one before it.
+                absorbNext = false
+                advanceCycle(after: nextBreakKind)
+                return
+            }
             if skipNextPending {
                 skipNextPending = false
                 onEvent?(.breakSkipped(nextBreakKind, inAdvance: true))
@@ -323,6 +331,8 @@ final class BreakEngine {
         holdStarted = nil
         onEvent?(.snoozed(seconds))
     }
+
+    func absorbUpcomingBreak(_ absorb: Bool) { absorbNext = absorb }
 
     func toggleSkipNext() {
         if skipNextPending {

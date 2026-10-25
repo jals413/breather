@@ -2,23 +2,43 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Panes, grouped in the sidebar like System Settings.
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, profiles, breaks, breakScreen, notch, smartPause, reminders, planned, schedule, privacy, shortcuts, about
+    case general
+    case schedule, strictness, breakScreen, messages
+    case smartPause, notch
+    case reminders, privacy
+    case profiles, automations, about
+
     var id: String { rawValue }
+
+    struct Group: Identifiable {
+        let title: String?
+        let panes: [SettingsPane]
+        var id: String { title ?? "top" }
+    }
+
+    static let groups: [Group] = [
+        Group(title: nil, panes: [.general]),
+        Group(title: "Breaks", panes: [.schedule, .strictness, .breakScreen, .messages]),
+        Group(title: "Staying in Flow", panes: [.smartPause, .notch]),
+        Group(title: "Wellbeing", panes: [.reminders, .privacy]),
+        Group(title: "Advanced", panes: [.profiles, .automations, .about]),
+    ]
 
     var title: String {
         switch self {
         case .general: "General"
-        case .profiles: "Profiles"
-        case .reminders: "Reminders"
-        case .planned: "Planned & Automations"
-        case .privacy: "Stats & Privacy"
-        case .breaks: "Breaks"
+        case .schedule: "Schedule"
+        case .strictness: "Skipping & Snoozing"
         case .breakScreen: "Break Screen"
-        case .notch: "Notch & Alerts"
+        case .messages: "Messages & Sounds"
         case .smartPause: "Smart Pause"
-        case .schedule: "Office Hours"
-        case .shortcuts: "Shortcuts"
+        case .notch: "Notch & Alerts"
+        case .reminders: "Reminders"
+        case .privacy: "Stats & Privacy"
+        case .profiles: "Profiles"
+        case .automations: "Automations"
         case .about: "About"
         }
     }
@@ -26,16 +46,16 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
-        case .profiles: "person.crop.square.filled.and.at.rectangle.fill"
-        case .reminders: "drop.fill"
-        case .planned: "calendar.badge.clock"
-        case .privacy: "chart.bar.xaxis"
-        case .breaks: "eye.fill"
-        case .breakScreen: "paintbrush.fill"
-        case .notch: "rectangle.topthird.inset.filled"
-        case .smartPause: "brain.head.profile.fill"
         case .schedule: "calendar"
-        case .shortcuts: "command"
+        case .strictness: "hand.raised.fill"
+        case .breakScreen: "paintbrush.fill"
+        case .messages: "text.bubble.fill"
+        case .smartPause: "brain.head.profile.fill"
+        case .notch: "rectangle.topthird.inset.filled"
+        case .reminders: "drop.fill"
+        case .privacy: "chart.bar.xaxis"
+        case .profiles: "person.crop.square.filled.and.at.rectangle.fill"
+        case .automations: "command"
         case .about: "info"
         }
     }
@@ -43,35 +63,57 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .general: .gray
-        case .profiles: .purple
-        case .reminders: .cyan
-        case .planned: .orange
-        case .privacy: .green
-        case .breaks: Brand.teal
-        case .breakScreen: .pink
-        case .notch: .black
-        case .smartPause: .indigo
         case .schedule: .red
-        case .shortcuts: .blue
+        case .strictness: .orange
+        case .breakScreen: .pink
+        case .messages: Brand.teal
+        case .smartPause: .indigo
+        case .notch: .black
+        case .reminders: .cyan
+        case .privacy: .green
+        case .profiles: .purple
+        case .automations: .blue
         case .about: Brand.ocean
         }
     }
 
     var summary: String {
         switch self {
-        case .general: "Set your rhythm: how long you work and how long you rest."
-        case .profiles: "Switch between saved setups, by hand or automatically by app."
-        case .reminders: "Gentle nudges between breaks: water, posture, blinking, standing up."
-        case .planned: "Breaks at fixed times, and Shortcuts that run when breaks start or end."
-        case .privacy: "See your screen habits. Everything is stored only on this Mac."
-        case .breaks: "Choose how strict breaks are, what they say, and how they sound."
+        case .general: "Startup, menu bar, and which profile you're using."
+        case .schedule: "How long you work and rest, when reminders run, and breaks at fixed times."
+        case .strictness: "How easy it is to skip, snooze or end a break early."
         case .breakScreen: "Make the full-screen break yours: background, timer, type and themes."
-        case .notch: "Breather lives in your notch. Decide what it shows and when."
+        case .messages: "What breaks say, and how they sound."
         case .smartPause: "Breaks wait while you're in a call, watching, presenting or mid-sentence."
-        case .schedule: "Only get reminders during the hours you work."
-        case .shortcuts: "Control Breather from anywhere with global shortcuts."
+        case .notch: "Breather lives in your notch. Decide what it shows and when."
+        case .reminders: "Gentle nudges between breaks: water, posture, blinking, standing up."
+        case .privacy: "See your screen habits. Everything is stored only on this Mac."
+        case .profiles: "Switch between saved setups, by hand or automatically by app."
+        case .automations: "Shortcuts and scripts when breaks start or end, keyboard shortcuts, and link commands."
         case .about: Brand.tagline
         }
+    }
+
+    /// Extra words the sidebar search matches.
+    var keywords: String {
+        switch self {
+        case .general: "login startup menu bar icon profile reset data"
+        case .schedule: "rhythm preset work minutes break seconds long break office hours days planned lunch custom length"
+        case .strictness: "difficulty casual balanced hardcore skip snooze advance end early keep open lock overtime"
+        case .breakScreen: "background theme timer font colour color wallpaper photo aurora gradient breathing"
+        case .messages: "message text sound volume chime long break"
+        case .smartPause: "meeting call video fullscreen game recording focus app typing idle away"
+        case .notch: "notch island heads-up countdown pill display hover"
+        case .reminders: "water posture blink stand stretch nudge"
+        case .privacy: "stats score apps websites browser tracking"
+        case .profiles: "profile deep work everyday gentle switch"
+        case .automations: "shortcut applescript shell script keyboard hotkey url breather://"
+        case .about: "version"
+        }
+    }
+
+    func matches(_ query: String) -> Bool {
+        query.isEmpty || "\(title) \(summary) \(keywords)".localizedCaseInsensitiveContains(query)
     }
 }
 
@@ -115,39 +157,57 @@ struct PaneHeader: View {
 
 struct SettingsView: View {
     let app: AppModel
-    @State private var pane: SettingsPane = .general
+    @State private var pane: SettingsPane? = .general
+    @State private var query = ""
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPane.allCases, selection: $pane) { pane in
-                HStack(spacing: 8) {
-                    SettingsBadge(symbol: pane.symbol, tint: pane.tint)
-                    Text(pane.title)
+            List(selection: $pane) {
+                ForEach(SettingsPane.groups) { group in
+                    let panes = group.panes.filter { $0.matches(query) }
+                    if !panes.isEmpty {
+                        Section {
+                            ForEach(panes) { pane in
+                                HStack(spacing: 8) {
+                                    SettingsBadge(symbol: pane.symbol, tint: pane.tint)
+                                    Text(pane.title)
+                                }
+                                .tag(pane)
+                            }
+                        } header: {
+                            if let title = group.title { Text(title) }
+                        }
+                    }
                 }
-                .tag(pane)
             }
-            .navigationSplitViewColumnWidth(190)
+            .searchable(text: $query, placement: .sidebar, prompt: "Search")
+            .onChange(of: query) { _, q in
+                // Jump to the first match so typing feels like System Settings.
+                if let current = pane, current.matches(q) { return }
+                pane = SettingsPane.allCases.first { $0.matches(q) } ?? pane
+            }
+            .navigationSplitViewColumnWidth(min: 200, ideal: 215)
         } detail: {
             Group {
-                switch pane {
+                switch pane ?? .general {
                 case .general: GeneralPane(app: app)
-                case .profiles: ProfilesPane(app: app)
-                case .reminders: RemindersPane(app: app)
-                case .planned: PlannedPane(app: app)
-                case .privacy: PrivacyPane(app: app)
-                case .breaks: BreaksPane(app: app)
-                case .breakScreen: BreakScreenPane(app: app)
-                case .notch: NotchPane(app: app)
-                case .smartPause: SmartPausePane(app: app)
                 case .schedule: SchedulePane(app: app)
-                case .shortcuts: ShortcutsPane(app: app)
+                case .strictness: StrictnessPane(app: app)
+                case .breakScreen: BreakScreenPane(app: app)
+                case .messages: MessagesPane(app: app)
+                case .smartPause: SmartPausePane(app: app)
+                case .notch: NotchPane(app: app)
+                case .reminders: RemindersPane(app: app)
+                case .privacy: PrivacyPane(app: app)
+                case .profiles: ProfilesPane(app: app)
+                case .automations: AutomationsPane(app: app)
                 case .about: AboutPane(app: app)
                 }
             }
             .formStyle(.grouped)
             .navigationTitle("")
         }
-        .frame(minWidth: 720, minHeight: 520)
+        .frame(minWidth: 760, minHeight: 560)
     }
 }
 
@@ -160,6 +220,46 @@ private struct GeneralPane: View {
         @Bindable var store = app.store
         Form {
             PaneHeader(pane: .general)
+            Section("Profile") {
+                Picker("Active profile", selection: Binding {
+                    store.settings.activeProfileID
+                } set: { id in
+                    if let id { app.applyProfile(id) } else { store.settings.activeProfileID = nil }
+                }) {
+                    Text("Custom").tag(UUID?.none)
+                    ForEach(store.settings.profiles) { profile in
+                        Label(profile.name, systemImage: profile.symbol).tag(UUID?.some(profile.id))
+                    }
+                }
+            }
+            Section("Startup") {
+                Toggle("Open Breather when you log in", isOn: $store.settings.launchAtLogin)
+            }
+            Section {
+                Toggle("Show icon in the menu bar", isOn: $store.settings.showMenuBarIcon)
+                if store.settings.showMenuBarIcon {
+                    Toggle("Show time until break next to the icon", isOn: $store.settings.menuBarShowsTime)
+                }
+            } header: {
+                Text("Menu bar")
+            } footer: {
+                if !store.settings.showMenuBarIcon {
+                    Text("With the icon hidden, open Breather from Spotlight or Finder to get back here, or hover the notch.")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Schedule
+
+private struct SchedulePane: View {
+    let app: AppModel
+
+    var body: some View {
+        @Bindable var store = app.store
+        Form {
+            PaneHeader(pane: .schedule)
             Section("Rhythm") {
                 Picker("Preset", selection: presetBinding) {
                     Text("Custom").tag("Custom")
@@ -175,14 +275,34 @@ private struct GeneralPane: View {
                     LabeledSlider(title: "Long break", value: $store.settings.longBreakMinutes, range: 1...30, step: 1) { "\(Int($0)) min" }
                 }
             }
-            Section("System") {
-                Toggle("Launch at login", isOn: $store.settings.launchAtLogin)
-                Toggle("Show icon in the menu bar", isOn: $store.settings.showMenuBarIcon)
-                if store.settings.showMenuBarIcon {
-                    Toggle("Show time until break next to the icon", isOn: $store.settings.menuBarShowsTime)
-                }
+            Section {
+                LabeledSlider(title: "“Take a break for…” length", value: $store.settings.customBreakMinutes, range: 1...60, step: 1) { "\(Int($0)) min" }
+            } header: {
+                Text("Breaks on demand")
+            } footer: {
+                Text("Used by the “Take a break for…” shortcut. The menu bar also offers 1–15 minute breaks.")
             }
+
+            Section {
+                Toggle("Only remind me during office hours", isOn: $store.settings.officeHours.enabled)
+                if store.settings.officeHours.enabled {
+                    ForEach(weekdayOrder, id: \.self) { index in
+                        DayRow(name: Calendar.current.weekdaySymbols[index], day: $store.settings.officeHours.days[index])
+                    }
+                }
+            } header: {
+                Text("Office hours")
+            } footer: {
+                Text("An end time earlier than the start runs past midnight. Planned breaks run outside office hours too.")
+            }
+
+            PlannedBreaksSection(app: app)
         }
+    }
+
+    private var weekdayOrder: [Int] {
+        let first = Calendar.current.firstWeekday - 1
+        return (0..<7).map { (first + $0) % 7 }
     }
 
     private var presetBinding: Binding<String> {
@@ -202,17 +322,44 @@ private struct GeneralPane: View {
     }
 }
 
-// MARK: - Breaks
+private struct DayRow: View {
+    var name: String
+    @Binding var day: DaySchedule
 
-private struct BreaksPane: View {
+    var body: some View {
+        HStack {
+            Toggle(name, isOn: $day.enabled)
+                .frame(width: 140, alignment: .leading)
+            Spacer()
+            DatePicker("", selection: minutes($day.startMinute), displayedComponents: .hourAndMinute).labelsHidden()
+            Text("–").foregroundStyle(.secondary)
+            DatePicker("", selection: minutes($day.endMinute), displayedComponents: .hourAndMinute).labelsHidden()
+        }
+        .disabled(!day.enabled)
+        .opacity(day.enabled ? 1 : 0.5)
+    }
+
+    private func minutes(_ binding: Binding<Int>) -> Binding<Date> {
+        Binding {
+            Calendar.current.startOfDay(for: .now).addingTimeInterval(TimeInterval(binding.wrappedValue * 60))
+        } set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            binding.wrappedValue = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+        }
+    }
+}
+
+// MARK: - Skipping & snoozing
+
+private struct StrictnessPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
         Form {
-            PaneHeader(pane: .breaks)
+            PaneHeader(pane: .strictness)
             Section {
-                Picker("Skip difficulty", selection: $store.settings.difficulty) {
+                Picker("Difficulty", selection: $store.settings.difficulty) {
                     ForEach(SkipDifficulty.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
@@ -220,21 +367,48 @@ private struct BreaksPane: View {
                 if store.settings.difficulty == .balanced {
                     LabeledSlider(title: "Skip unlocks after", value: $store.settings.balancedSkipDelaySeconds, range: 2...20, step: 1) { "\(Int($0))s" }
                 }
-                if store.settings.difficulty != .hardcore {
+            } header: {
+                Text("Skip difficulty")
+            }
+            if store.settings.difficulty != .hardcore {
+                Section("Snoozing and skipping ahead") {
                     Stepper("Snoozes per break: \(store.settings.snoozeLimitPerBreak)", value: $store.settings.snoozeLimitPerBreak, in: 0...10)
                     Stepper("Skips in advance per day: \(store.settings.dailyAdvanceSkipLimit)", value: $store.settings.dailyAdvanceSkipLimit, in: 0...20)
                 }
+            }
+            Section("During a break") {
                 Toggle("Allow ending a break early", isOn: $store.settings.allowEndEarly)
                 if store.settings.allowEndEarly {
                     LabeledSlider(title: "“End break” appears after", value: $store.settings.endEarlyAfterFraction, range: 0.25...1, step: 0.05) {
                         "\(Int($0 * 100))% of the break"
                     }
                 }
+                Toggle("Keep the break open until I click “End break”", isOn: $store.settings.keepBreakOpenUntilEnded)
                 Toggle("Lock the screen when a long break starts", isOn: $store.settings.lockScreenOnBreak)
-            } header: {
-                Text("Enforcement")
             }
+            Section {
+                Toggle("Nudge me when I go too long without a break", isOn: $store.settings.overtimeNudge)
+                if store.settings.overtimeNudge {
+                    LabeledSlider(title: "After going over by", value: $store.settings.overtimeNudgeMinutes, range: 5...60, step: 5) { "\(Int($0)) min" }
+                }
+            } header: {
+                Text("Overtime")
+            } footer: {
+                Text("Counts time since your last real break. Snoozes and skips don't reset it.")
+            }
+        }
+    }
+}
 
+// MARK: - Messages & sounds
+
+private struct MessagesPane: View {
+    let app: AppModel
+
+    var body: some View {
+        @Bindable var store = app.store
+        Form {
+            PaneHeader(pane: .messages)
             Section {
                 MessagesEditor(messages: $store.settings.shortBreakMessages)
             } header: {
@@ -245,11 +419,12 @@ private struct BreaksPane: View {
             Section("Long break messages") {
                 MessagesEditor(messages: $store.settings.longBreakMessages)
             }
-
             Section("Sound") {
                 Toggle("Play sounds", isOn: $store.settings.soundEnabled)
                 if store.settings.soundEnabled {
                     SoundPicker(title: "Break starts", selection: $store.settings.breakStartSound, volume: store.settings.soundVolume)
+                    SoundPicker(title: "Long break starts", selection: $store.settings.longBreakStartSound,
+                                volume: store.settings.soundVolume, allowsSameAsShort: true)
                     SoundPicker(title: "Break ends", selection: $store.settings.breakEndSound, volume: store.settings.soundVolume)
                     LabeledSlider(title: "Volume", value: $store.settings.soundVolume, range: 0.05...1, step: 0.05) { "\(Int($0 * 100))%" }
                 }
@@ -279,23 +454,36 @@ private struct SoundPicker: View {
     var title: String
     @Binding var selection: String
     var volume: Double
+    var allowsSameAsShort = false
 
     var body: some View {
         HStack {
             Picker(title, selection: $selection) {
+                if allowsSameAsShort { Text("Same as short break").tag("") }
                 ForEach(Sound.systemSounds, id: \.self) { Text($0).tag($0) }
+                if selection.hasPrefix("/") { Text(Sound.displayName(selection)).tag(selection) }
             }
+            Button("Choose…") { chooseFile() }
+                .help("Use your own sound file")
             Button {
                 Sound.play(selection, volume: volume)
             } label: {
                 Image(systemName: "play.circle")
             }
             .buttonStyle(.borderless)
+            .disabled(selection.isEmpty)
         }
+    }
+
+    private func chooseFile() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.audio]
+        panel.prompt = "Use"
+        if panel.runModal() == .OK, let url = panel.url { selection = url.path }
     }
 }
 
-// MARK: - Notch
+// MARK: - Notch & alerts
 
 private struct NotchPane: View {
     let app: AppModel
@@ -315,11 +503,19 @@ private struct NotchPane: View {
                     }
                 }
                 Toggle("Expand the notch on hover", isOn: $store.settings.notchHoverExpands)
-                Toggle("Show alerts as a pill on displays without a notch", isOn: $store.settings.pillOnScreensWithoutNotch)
             } header: {
                 Text("Notch")
             } footer: {
-                Text("On a MacBook with a notch, the island grows out of it. Other displays get a floating pill under the menu bar. Hover the notch to peek at your next break.")
+                Text("On a MacBook with a notch, the island grows out of it. Hover the notch to peek at your next break.")
+            }
+
+            Section {
+                Picker("Show alerts on", selection: $store.settings.alertDisplay) {
+                    ForEach(AlertDisplay.allCases) { Text($0.title).tag($0) }
+                }
+                Toggle("Use a floating pill on displays without a notch", isOn: $store.settings.pillOnScreensWithoutNotch)
+            } header: {
+                Text("Displays")
             }
 
             Section("Heads-up before a break") {
@@ -334,7 +530,7 @@ private struct NotchPane: View {
                     Spacer()
                     Button("Preview heads-up") { app.notch.showHeadsUp(app.engine.nextBreakKind, for: 8) }
                     Button("Preview toast") {
-                        app.notch.show(NotchToast(symbol: "figure.walk", tint: .breatherMint, title: "Welcome back",
+                        app.notch.show(NotchToast(symbol: "figure.walk", tint: Brand.mint, title: "Welcome back",
                                                   subtitle: "6 minutes away counted as a break", action: .undoNaturalBreak, actionTitle: "Undo"))
                     }
                 }
@@ -368,8 +564,6 @@ private struct SmartPausePane: View {
                     LabeledSlider(title: "Pause length", value: $store.settings.typingLullSeconds, range: 1...10, step: 1) { "\(Int($0))s without typing" }
                     LabeledSlider(title: "Never wait longer than", value: $store.settings.maxTypingDelaySeconds, range: 15...600, step: 15) { Format.spoken($0) }
                 }
-                Toggle("Count time away from the Mac as a break", isOn: $store.settings.idleCountsAsBreak)
-                LabeledSlider(title: "You're away after", value: $store.settings.idleThresholdSeconds, range: 30...600, step: 30) { Format.spoken($0) + " idle" }
                 LabeledSlider(title: "After an activity ends, wait", value: $store.settings.postActivityDelaySeconds, range: 0...300, step: 15) {
                     $0 == 0 ? "No delay" : Format.spoken($0)
                 }
@@ -377,13 +571,16 @@ private struct SmartPausePane: View {
                 Text("Interruptions")
             }
 
-            Section {
+            Section("Time away") {
+                Toggle("Count time away from the Mac as a break", isOn: $store.settings.idleCountsAsBreak)
+                LabeledSlider(title: "You're away after", value: $store.settings.idleThresholdSeconds, range: 30...600, step: 30) { Format.spoken($0) + " idle" }
+            }
+
+            Section("Meetings") {
                 Toggle("Calls & meetings (microphone or camera in use)", isOn: $store.settings.pauseForMeetings)
                 if store.settings.pauseForMeetings {
                     AppList(title: "Apps that don't count as a call", apps: $store.settings.meetingExcludedApps)
                 }
-            } header: {
-                Text("Meetings")
             }
 
             Section("Video") {
@@ -498,82 +695,53 @@ enum AppChooser {
     }
 }
 
-// MARK: - Schedule
+// MARK: - Automations
 
-private struct SchedulePane: View {
+private struct AutomationsPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
         Form {
-            PaneHeader(pane: .schedule)
-            Section {
-                Toggle("Only remind me during office hours", isOn: $store.settings.officeHours.enabled)
-            } footer: {
-                Text("An end time earlier than the start runs past midnight.")
-            }
-            if store.settings.officeHours.enabled {
-                Section("Days") {
-                    ForEach(weekdayOrder, id: \.self) { index in
-                        DayRow(name: Calendar.current.weekdaySymbols[index], day: $store.settings.officeHours.days[index])
-                    }
-                }
-            }
-        }
-    }
-
-    /// Locale-aware week order (Monday first in most of the world).
-    private var weekdayOrder: [Int] {
-        let first = Calendar.current.firstWeekday - 1
-        return (0..<7).map { (first + $0) % 7 }
-    }
-}
-
-private struct DayRow: View {
-    var name: String
-    @Binding var day: DaySchedule
-
-    var body: some View {
-        HStack {
-            Toggle(name, isOn: $day.enabled)
-                .frame(width: 140, alignment: .leading)
-            Spacer()
-            DatePicker("", selection: minutes($day.startMinute), displayedComponents: .hourAndMinute).labelsHidden()
-            Text("–").foregroundStyle(.secondary)
-            DatePicker("", selection: minutes($day.endMinute), displayedComponents: .hourAndMinute).labelsHidden()
-        }
-        .disabled(!day.enabled)
-        .opacity(day.enabled ? 1 : 0.5)
-    }
-
-    private func minutes(_ binding: Binding<Int>) -> Binding<Date> {
-        Binding {
-            Calendar.current.startOfDay(for: .now).addingTimeInterval(TimeInterval(binding.wrappedValue * 60))
-        } set: { date in
-            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
-            binding.wrappedValue = (c.hour ?? 0) * 60 + (c.minute ?? 0)
-        }
-    }
-}
-
-// MARK: - Shortcuts
-
-private struct ShortcutsPane: View {
-    let app: AppModel
-
-    var body: some View {
-        @Bindable var store = app.store
-        Form {
-            PaneHeader(pane: .shortcuts)
+            PaneHeader(pane: .automations)
+            AutomationsSection(app: app)
             Section {
                 ShortcutRow(title: "Take a break now", key: $store.settings.hotKeys.breakNow)
+                ShortcutRow(title: "Take a break for \(Int(store.settings.customBreakMinutes)) min", key: $store.settings.hotKeys.customBreak)
                 ShortcutRow(title: "Pause / resume", key: $store.settings.hotKeys.togglePause)
                 ShortcutRow(title: "Skip next break", key: $store.settings.hotKeys.skipNext)
+            } header: {
+                Text("Keyboard shortcuts")
             } footer: {
                 Text("Global shortcuts work from any app. During a break, press Esc twice to skip.")
             }
+            Section {
+                ForEach(Self.commands, id: \.0) { url, what in
+                    HStack {
+                        Text(url).font(.system(.callout, design: .monospaced)).textSelection(.enabled)
+                        Spacer()
+                        Text(what).foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Link commands")
+            } footer: {
+                Text("Open these from Shortcuts (Open URL), Raycast, Alfred, or Terminal with `open \"breather://break\"`.")
+            }
         }
     }
+
+    static let commands: [(String, String)] = [
+        ("breather://break", "Break now"),
+        ("breather://break?minutes=10", "Break of any length"),
+        ("breather://long-break", "Long break"),
+        ("breather://pause?minutes=30", "Pause (omit minutes: until resumed)"),
+        ("breather://resume", "Resume"),
+        ("breather://skip-next", "Skip the next break"),
+        ("breather://profile?name=Deep%20Work", "Switch profile"),
+        ("breather://stats", "Open Stats"),
+        ("breather://settings", "Open Settings"),
+    ]
 }
 
 private struct ShortcutRow: View {
@@ -622,18 +790,20 @@ private struct AboutPane: View {
     var body: some View {
         Form {
             Section {
-                HStack(spacing: 14) {
-                    BreatherAppIcon().frame(width: 64, height: 64)
-                    VStack(alignment: .leading) {
-                        Text("Breather").font(.title2.bold())
-                        Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
-                            .foregroundStyle(.secondary)
-                    }
+                VStack(spacing: 10) {
+                    BreatherAppIcon().frame(width: 96, height: 96)
+                    Text(Brand.name).font(.title.bold())
+                    Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
+                        .foregroundStyle(.secondary)
+                    Text("\(Brand.tagline)\nSmart break reminders that live in your notch. No accounts, no telemetry. Everything stays on this Mac.")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
                 }
-                Text("\(Brand.tagline) Smart break reminders that live in your notch. No accounts, no telemetry — everything stays on this Mac.")
-                    .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
             }
             Section {
+                Button("Show Welcome Screen…") { app.showWelcome() }
                 Button("Show data folder in Finder") {
                     let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Breather")
                     NSWorkspace.shared.activateFileViewerSelecting([dir])

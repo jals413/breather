@@ -5,6 +5,7 @@ struct NotchToast: Equatable, Identifiable {
     enum Action: Equatable {
         case undoNaturalBreak, resume
         case reminderDone(UUID), reminderLater(UUID)
+        case startPlanned(UUID), skipPlanned, breakNow
     }
     var id = UUID()
     var symbol: String

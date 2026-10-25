@@ -30,9 +30,17 @@ struct NotchGeometry: Equatable {
     /// Height of the band the hardware notch occupies; 0 for pill screens.
     var bandHeight: CGFloat { hasNotch ? notch.height : 0 }
 
-    /// The notched screen if there is one, otherwise the main screen.
+    /// Where alerts go, per the user's choice; falls back to the main screen.
     @MainActor
-    static func preferredScreen() -> NSScreen? {
-        NSScreen.screens.first { $0.safeAreaInsets.top > 0 && $0.auxiliaryTopLeftArea != nil } ?? NSScreen.main
+    static func preferredScreen(_ choice: AlertDisplay = .notch) -> NSScreen? {
+        switch choice {
+        case .notch:
+            return NSScreen.screens.first { $0.safeAreaInsets.top > 0 && $0.auxiliaryTopLeftArea != nil } ?? NSScreen.main
+        case .main:
+            return NSScreen.screens.first
+        case .mouse:
+            let point = NSEvent.mouseLocation
+            return NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+        }
     }
 }

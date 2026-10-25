@@ -171,7 +171,8 @@ struct BreakScreen: View {
     }
 
     private var hint: String {
-        switch skip {
+        if session.remaining(at: now) <= 0 { return "Break complete. End it when you're ready." }
+        return switch skip {
         case .hidden: "This break can't be skipped."
         case .locked: "Look at something far away. Relax your shoulders."
         case .skip: "Press Esc twice to skip."

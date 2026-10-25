@@ -70,7 +70,7 @@ final class NotchWindowController {
     private func rebuild() {
         panel?.orderOut(nil)
         panel = nil
-        guard let screen = NotchGeometry.preferredScreen() else { return }
+        guard let screen = NotchGeometry.preferredScreen(app.store.settings.alertDisplay) else { return }
         let geometry = NotchGeometry(screen: screen)
         if !geometry.hasNotch && !app.store.settings.pillOnScreensWithoutNotch { return }
         self.geometry = geometry

@@ -135,6 +135,26 @@ final class BreakEngineTests: XCTestCase {
         XCTAssertFalse(engine.canSkipInAdvance)
     }
 
+    func testKeepBreakOpenUntilEnded() {
+        let engine = makeEngine { $0.keepBreakOpenUntilEnded = true }
+        engine.startBreak(now: start)
+        run(engine, from: 1, seconds: 30)
+        XCTAssertTrue(engine.isOnBreak, "stays open past its 10s timer")
+        engine.endBreak(now: start.addingTimeInterval(32))
+        XCTAssertFalse(engine.isOnBreak)
+        XCTAssertTrue(events.contains { if case .breakEnded(_, completed: true) = $0 { true } else { false } })
+    }
+
+    func testAbsorbedBreakIsDroppedQuietly() {
+        let engine = makeEngine()
+        engine.absorbUpcomingBreak(true)
+        run(engine, seconds: 61)
+        XCTAssertFalse(engine.isOnBreak)
+        XCTAssertFalse(events.contains { if case .breakStarted = $0 { true } else { false } })
+        XCTAssertFalse(engine.absorbNext)
+        XCTAssertLessThan(engine.workElapsed, 2)
+    }
+
     func testPauseAndTimedResume() {
         let engine = makeEngine()
         engine.pause(for: 30, now: start)

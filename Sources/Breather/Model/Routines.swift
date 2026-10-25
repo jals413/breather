@@ -49,11 +49,27 @@ struct PlannedBreak: Codable, Identifiable, Equatable {
 
 /// Run a Shortcut or AppleScript when breaks start and end.
 struct Automations: Codable, Equatable {
+    enum Language: String, Codable, CaseIterable, Identifiable {
+        case appleScript, shell
+        var id: String { rawValue }
+        var title: String { self == .shell ? "Shell (zsh)" : "AppleScript" }
+    }
     var enabled = false
     var startShortcut = ""
     var endShortcut = ""
     var startScript = ""
     var endScript = ""
+    var language: Language = .appleScript
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        self.init()
+        let read = try TolerantDecoder(decoder)
+        read(&self, \.enabled, "enabled"); read(&self, \.startShortcut, "startShortcut")
+        read(&self, \.endShortcut, "endShortcut"); read(&self, \.startScript, "startScript")
+        read(&self, \.endScript, "endScript"); read(&self, \.language, "language")
+    }
 }
 
 /// A saved set of the settings people switch between (e.g. Deep Work vs Everyday).

@@ -61,6 +61,12 @@ extension Settings {
         read(\.allowEndEarly, "allowEndEarly")
         read(\.endEarlyAfterFraction, "endEarlyAfterFraction")
         read(\.lockScreenOnBreak, "lockScreenOnBreak")
+        read(\.keepBreakOpenUntilEnded, "keepBreakOpenUntilEnded")
+        read(\.customBreakMinutes, "customBreakMinutes")
+        read(\.overtimeNudge, "overtimeNudge")
+        read(\.overtimeNudgeMinutes, "overtimeNudgeMinutes")
+        read(\.longBreakStartSound, "longBreakStartSound")
+        read(\.alertDisplay, "alertDisplay")
         read(\.shortBreakMessages, "shortBreakMessages")
         read(\.longBreakMessages, "longBreakMessages")
         read(\.appearance, "appearance")
@@ -102,6 +108,7 @@ extension Settings {
         read(\.trackWebsites, "trackWebsites")
         read(\.launchAtLogin, "launchAtLogin")
         read(\.hotKeys, "hotKeys")
+        if let keys = try? container.decode(HotKeysCompat.self, forKey: AnyKey("hotKeys")) { keys.apply(to: &hotKeys) }
     }
 }
 
@@ -136,5 +143,16 @@ extension BreakAppearance {
         read(&self, \.messageScale, "messageScale"); read(&self, \.showKindLabel, "showKindLabel")
         read(&self, \.showMessage, "showMessage"); read(&self, \.showBreathingHalo, "showBreathingHalo")
         read(&self, \.showBreathingCue, "showBreathingCue"); read(&self, \.showClock, "showClock"); read(&self, \.showHint, "showHint")
+    }
+}
+
+/// Older saves lack newer shortcuts; read whatever is there.
+private struct HotKeysCompat: Decodable {
+    var breakNow: HotKey?, togglePause: HotKey?, skipNext: HotKey?, customBreak: HotKey?
+    func apply(to keys: inout HotKeySettings) {
+        if let breakNow { keys.breakNow = breakNow }
+        if let togglePause { keys.togglePause = togglePause }
+        if let skipNext { keys.skipNext = skipNext }
+        if let customBreak { keys.customBreak = customBreak }
     }
 }

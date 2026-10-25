@@ -5,11 +5,19 @@ import SwiftUI
 enum Sound {
     static let systemSounds = ["Purr", "Glass", "Tink", "Pop", "Blow", "Bottle", "Frog", "Funk", "Hero", "Morse", "Ping", "Submarine"]
 
+    /// `name` is a system sound name, or a path to your own audio file.
     @MainActor
     static func play(_ name: String, volume: Double) {
-        guard let sound = NSSound(named: NSSound.Name(name))?.copy() as? NSSound else { return }
+        let base = name.hasPrefix("/") ? NSSound(contentsOf: URL(fileURLWithPath: name), byReference: true) : NSSound(named: NSSound.Name(name))
+        guard let sound = base?.copy() as? NSSound else { return }
         sound.volume = Float(volume)
         sound.play()
+    }
+}
+
+extension Sound {
+    static func displayName(_ name: String) -> String {
+        name.hasPrefix("/") ? URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent : name
     }
 }
 

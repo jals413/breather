@@ -74,6 +74,12 @@ struct Settings: Codable, Equatable {
     /// Fraction of the break after which "End Break" replaces "Skip".
     var endEarlyAfterFraction = 0.5
     var lockScreenOnBreak = false
+    /// When the timer ends, wait for "End break" instead of closing on its own.
+    var keepBreakOpenUntilEnded = false
+    var customBreakMinutes: Double = 5
+    /// Nudge when you've gone this long past your rhythm without a real break.
+    var overtimeNudge = true
+    var overtimeNudgeMinutes: Double = 15
     var shortBreakMessages = [
         "Look at something 20 feet away.",
         "Blink slowly. Let your eyes go soft.",
@@ -91,6 +97,8 @@ struct Settings: Codable, Equatable {
     var soundEnabled = true
     var breakStartSound = "Purr"
     var breakEndSound = "Glass"
+    /// Empty = same as the short break sound. A name is a system sound; a path is your own file.
+    var longBreakStartSound = ""
     var soundVolume = 0.35
 
     // Heads-up & notch
@@ -103,6 +111,7 @@ struct Settings: Codable, Equatable {
     var notchRevealSeconds: Double = 0
     var notchHoverExpands = true
     var pillOnScreensWithoutNotch = true
+    var alertDisplay: AlertDisplay = .notch
     var showMenuBarIcon = true
     var menuBarShowsTime = false
 
@@ -157,10 +166,23 @@ struct Settings: Codable, Equatable {
     var longBreakSeconds: TimeInterval { longBreakMinutes * 60 }
 }
 
+enum AlertDisplay: String, Codable, CaseIterable, Identifiable {
+    case notch, main, mouse
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .notch: "The display with a notch"
+        case .main: "The main display"
+        case .mouse: "The display with the pointer"
+        }
+    }
+}
+
 struct HotKeySettings: Codable, Equatable {
     var breakNow = HotKey(keyCode: 11, modifiers: [.control, .option, .command])      // ⌃⌥⌘B
     var togglePause = HotKey(keyCode: 35, modifiers: [.control, .option, .command])   // ⌃⌥⌘P
     var skipNext = HotKey(keyCode: 1, modifiers: [.control, .option, .command])       // ⌃⌥⌘S
+    var customBreak = HotKey(keyCode: 17, modifiers: [.control, .option, .command])   // ⌃⌥⌘T
 }
 
 struct HotKey: Codable, Equatable {

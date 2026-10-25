@@ -5,6 +5,8 @@ enum RoutineEvent: Equatable {
     case remind(Reminder)
     case plannedBreakSoon(PlannedBreak, in: TimeInterval)
     case startPlannedBreak(PlannedBreak)
+    /// You were busy when it was due; offer Start / Skip today instead of springing it on you.
+    case plannedBreakLate(PlannedBreak)
     case plannedBreakMissed(PlannedBreak)
 }
 
@@ -50,7 +52,7 @@ final class RoutineScheduler {
                 events.append(.plannedBreakMissed(planned))
             } else if !engine.isOnBreak, case .working = engine.phase {
                 markDone(key)
-                events.append(.startPlannedBreak(planned))
+                events.append(-until > 120 ? .plannedBreakLate(planned) : .startPlannedBreak(planned))
             }
             // Smart-paused (call), holding, away: keep waiting within the grace window.
         }
@@ -74,6 +76,18 @@ final class RoutineScheduler {
             events.append(.remind(reminder))
         }
         return events
+    }
+
+    /// Seconds until the next enabled planned break today, if it hasn't happened yet.
+    func secondsUntilNextPlanned(now: Date, settings: Settings) -> TimeInterval? {
+        let weekday = calendar.component(.weekday, from: now) - 1
+        let c = calendar.dateComponents([.hour, .minute, .second], from: now)
+        let second = Double((c.hour ?? 0) * 3600 + (c.minute ?? 0) * 60 + (c.second ?? 0))
+        return settings.plannedBreaks
+            .filter { $0.enabled && $0.weekdays.contains(weekday) && !isDone(dayKey(now) + $0.id.uuidString) }
+            .map { Double($0.minuteOfDay * 60) - second }
+            .filter { $0 > 0 }
+            .min()
     }
 
     func snooze(_ id: UUID, minutes: Double, settings: Settings) {
@@ -121,12 +135,16 @@ extension EnginePhase {
 
 /// Runs the user's Shortcuts / AppleScripts off the main thread.
 enum AutomationRunner {
-    static func run(shortcut: String, script: String) {
+    static func run(shortcut: String, script: String, language: Automations.Language = .appleScript) {
         let shortcut = shortcut.trimmingCharacters(in: .whitespaces)
         let script = script.trimmingCharacters(in: .whitespacesAndNewlines)
         DispatchQueue.global(qos: .utility).async {
             if !shortcut.isEmpty { launch("/usr/bin/shortcuts", ["run", shortcut]) }
-            if !script.isEmpty { launch("/usr/bin/osascript", ["-e", script]) }
+            guard !script.isEmpty else { return }
+            switch language {
+            case .appleScript: launch("/usr/bin/osascript", ["-e", script])
+            case .shell: launch("/bin/zsh", ["-lc", script])
+            }
         }
     }
 

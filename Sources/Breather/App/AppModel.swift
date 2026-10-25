@@ -62,6 +62,7 @@ final class AppModel {
     @ObservationIgnored let routines = RoutineScheduler()
     @ObservationIgnored private let statsWindow = StatsWindowController()
     @ObservationIgnored private var lastTickDate: Date?
+    @ObservationIgnored private var lastOvertimeNudge = Date.distantPast
 
     private static let snapshotKey = "engine.snapshot"
 
@@ -226,6 +227,13 @@ final class AppModel {
         let dt = lastTickDate.map { now.timeIntervalSince($0) } ?? 0
         lastTickDate = now
         for event in routines.tick(now: now, dt: dt, engine: engine) { handle(event) }
+        // A regular break due just before a planned one is dropped so they don't stack.
+        if let planned = routines.secondsUntilNextPlanned(now: now, settings: settings) {
+            engine.absorbUpcomingBreak(planned < 10 * 60 && engine.timeUntilBreak < planned)
+        } else if engine.absorbNext {
+            engine.absorbUpcomingBreak(false)
+        }
+        nudgeIfOvertime(now: now)
         usage.tick(now: now, dt: dt, engine: engine, settings: settings)
 
         announceSmartPauseChanges(signals.pauseReasons)
@@ -245,6 +253,17 @@ final class AppModel {
         guard let first = reasons.first, lastSmartReasons.isEmpty, engine.timeUntilBreak < 120 else { return }
         notch.show(NotchToast(symbol: first.symbol, tint: Brand.sky, title: "Break on hold",
                               subtitle: first.title + " · it'll wait until you're done"), for: 5)
+    }
+
+    private func nudgeIfOvertime(now: Date) {
+        let s = store.settings
+        guard s.overtimeNudge, !engine.isOnBreak, !engine.phase.isInCall else { return }
+        let interval = s.overtimeNudgeMinutes * 60
+        guard usage.currentSession > s.workSeconds + interval, now.timeIntervalSince(lastOvertimeNudge) > interval else { return }
+        lastOvertimeNudge = now
+        notch.show(NotchToast(symbol: "exclamationmark.circle.fill", tint: Brand.amber,
+                              title: "\(Format.hoursMinutes(usage.currentSession)) without a real break",
+                              subtitle: "Your eyes would like one.", action: .breakNow, actionTitle: "Take one"), for: 12)
     }
 
     private func nagIfPausedTooLong(now: Date) {
@@ -273,10 +292,14 @@ final class AppModel {
             notch.recompute()
             notchController?.contentChanged()
             overlay?.show()
-            if settings.soundEnabled { Sound.play(settings.breakStartSound, volume: settings.soundVolume) }
+            if settings.soundEnabled {
+                let sound = session.kind == .long && !settings.longBreakStartSound.isEmpty ? settings.longBreakStartSound : settings.breakStartSound
+                Sound.play(sound, volume: settings.soundVolume)
+            }
             if settings.lockScreenOnBreak && session.kind == .long { ActivityMonitor.lockScreen() }
             if settings.automations.enabled {
-                AutomationRunner.run(shortcut: settings.automations.startShortcut, script: settings.automations.startScript)
+                AutomationRunner.run(shortcut: settings.automations.startShortcut, script: settings.automations.startScript,
+                                     language: settings.automations.language)
             }
 
         case .breakEnded(let session, let completed):
@@ -323,7 +346,7 @@ final class AppModel {
 
     private func runEndAutomations() {
         let a = store.settings.automations
-        if a.enabled { AutomationRunner.run(shortcut: a.endShortcut, script: a.endScript) }
+        if a.enabled { AutomationRunner.run(shortcut: a.endShortcut, script: a.endScript, language: a.language) }
     }
 
     private func handle(_ event: RoutineEvent) {
@@ -339,6 +362,10 @@ final class AppModel {
         case .startPlannedBreak(let planned):
             engine.startBreak(kind: .custom, duration: planned.durationMinutes * 60, title: planned.title,
                               message: planned.message.isEmpty ? nil : planned.message)
+        case .plannedBreakLate(let planned):
+            notch.show(NotchToast(symbol: "calendar.badge.clock", tint: Brand.amber, title: "Time for \(planned.title.lowercased())",
+                                  subtitle: "It was due while you were busy.", action: .startPlanned(planned.id), actionTitle: "Start",
+                                  secondaryAction: .skipPlanned, secondaryTitle: "Skip today"), for: 30)
         case .plannedBreakMissed(let planned):
             log.append(BreakLogEntry(date: .now, outcome: .skipped, kind: .custom))
             notch.show(NotchToast(symbol: "calendar.badge.exclamationmark", tint: Brand.amber, title: "Missed \(planned.title.lowercased())",
@@ -361,7 +388,7 @@ final class AppModel {
         smartPause.invalidate()
         if old.hotKeys != new.hotKeys { registerHotKeys() }
         if old.launchAtLogin != new.launchAtLogin { LoginItem.sync(enabled: new.launchAtLogin) }
-        if old.pillOnScreensWithoutNotch != new.pillOnScreensWithoutNotch {
+        if old.pillOnScreensWithoutNotch != new.pillOnScreensWithoutNotch || old.alertDisplay != new.alertDisplay {
             notchController = NotchWindowController(app: self)
             notchController?.start()
         }
@@ -373,6 +400,7 @@ final class AppModel {
             (keys.breakNow, { [weak self] in self?.breakNow() }),
             (keys.togglePause, { [weak self] in self?.togglePause() }),
             (keys.skipNext, { [weak self] in self?.engine.toggleSkipNext() }),
+            (keys.customBreak, { [weak self] in self?.customBreak() }),
         ])
     }
 
@@ -384,6 +412,12 @@ final class AppModel {
     }
 
     func snooze(_ seconds: TimeInterval) { engine.snooze(seconds) }
+
+    /// "Take a break for…": any length, any time.
+    func customBreak(minutes: Double? = nil) {
+        notch.isHovering = false
+        engine.startBreak(kind: .custom, duration: (minutes ?? store.settings.customBreakMinutes) * 60)
+    }
 
     /// Heads-up "Skip": skip the upcoming break without seeing it.
     func skipUpcoming() {
@@ -414,6 +448,12 @@ final class AppModel {
         case .undoNaturalBreak: engine.undoNaturalBreak()
         case .resume: resume()
         case .reminderDone(let id): routines.resetReminder(id)
+        case .startPlanned(let id):
+            if let p = store.settings.plannedBreaks.first(where: { $0.id == id }) {
+                engine.startBreak(kind: .custom, duration: p.durationMinutes * 60, title: p.title, message: p.message.isEmpty ? nil : p.message)
+            }
+        case .skipPlanned: break
+        case .breakNow: breakNow()
         case .reminderLater(let id):
             let minutes = store.settings.reminders.first { $0.id == id }?.laterMinutes ?? 10
             routines.snooze(id, minutes: minutes, settings: store.settings)
@@ -426,6 +466,10 @@ final class AppModel {
         settingsWindow.show(app: self)
     }
 
+    func showWelcome() {
+        welcome.show(app: self) {}
+    }
+
     func openStats() {
         notch.isHovering = false
         statsWindow.show(app: self)
@@ -435,6 +479,7 @@ final class AppModel {
         guard case .onBreak(let session) = engine.phase else { return .hidden }
         let s = store.settings
         let elapsed = now.timeIntervalSince(session.start)
+        if elapsed >= session.duration { return .endBreak } // kept open past its timer
         if s.allowEndEarly && elapsed >= session.duration * s.endEarlyAfterFraction { return .endBreak }
         switch s.difficulty {
         case .hardcore: return .hidden
