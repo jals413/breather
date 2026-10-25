@@ -1,4 +1,5 @@
 import AppKit
+import CoreImage
 import SwiftUI
 
 struct BreakOverlayView: View {
@@ -20,6 +21,8 @@ struct BreakOverlayView: View {
                 .opacity(appeared ? 1 : 0)
             }
         }
+        .frame(width: screen.frame.width, height: screen.frame.height)
+        .clipped()
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -31,10 +34,14 @@ struct BreakOverlayView: View {
     private func content(session: BreakSession, now: Date) -> some View {
         let remaining = session.remaining(at: now)
         VStack(spacing: 30) {
-            Text(session.kind.title.uppercased())
-                .font(.system(size: 13, weight: .semibold))
-                .tracking(4)
-                .foregroundStyle(.white.opacity(0.6))
+            HStack(spacing: 8) {
+                BreatherMark(color: .white.opacity(0.75), rippleOpacity: 0.6)
+                    .frame(width: 18, height: 18)
+                Text(session.kind.title.uppercased())
+                    .font(.system(size: 12, weight: .semibold))
+                    .tracking(3)
+            }
+            .foregroundStyle(.white.opacity(0.65))
 
             ZStack {
                 BreathingHalo(reduceMotion: reduceMotion)
@@ -43,14 +50,14 @@ struct BreakOverlayView: View {
                     .frame(width: 220, height: 220)
                     .animation(.linear(duration: 0.25), value: now)
                 Text(Format.clock(remaining))
-                    .font(.system(size: 56, weight: .light, design: .rounded))
+                    .font(.system(size: 60, weight: .thin, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.easeInOut(duration: 0.3), value: Int(remaining.rounded(.up)))
             }
 
             Text(session.message)
-                .font(.system(size: 28, weight: .medium, design: .rounded))
+                .font(.system(size: 30, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 640)
                 .foregroundStyle(.white)
@@ -138,12 +145,17 @@ struct BreakBackgroundView: View {
                 Color.black.opacity(0.35)
             }
         case .wallpaper:
-            if let image = WallpaperLoader.image(for: screen) {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .blur(radius: 50)
-                    .overlay(Color.black.opacity(0.4))
+            if let image = WallpaperLoader.blurredImage(for: screen) {
+                // Pin to the screen's size: an aspect-fill image left to size itself would be
+                // wider than the window and drag the whole layout off-centre.
+                Color.clear
+                    .overlay {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    }
+                    .overlay(Color.black.opacity(0.38))
+                    .frame(width: screen.frame.width, height: screen.frame.height)
                     .clipped()
             } else {
                 AuroraBackground()
@@ -194,12 +206,24 @@ struct VisualEffectBlur: NSViewRepresentable {
 enum WallpaperLoader {
     private static var cache: [URL: NSImage] = [:]
 
-    static func image(for screen: NSScreen) -> NSImage? {
+    /// The screen's wallpaper, downscaled and blurred once with edge clamping (so the blur
+    /// doesn't fade to transparent at the screen edges), then cached.
+    static func blurredImage(for screen: NSScreen) -> NSImage? {
         guard let url = NSWorkspace.shared.desktopImageURL(for: screen) else { return nil }
         if let cached = cache[url] { return cached }
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
-              let image = NSImage(contentsOf: url) else { return nil }
+              let input = CIImage(contentsOf: url) else { return nil }
+
+        let targetWidth: CGFloat = 1280
+        let scale = min(1, targetWidth / input.extent.width)
+        let scaled = input.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        let blurred = scaled.clampedToExtent()
+            .applyingGaussianBlur(sigma: 28)
+            .cropped(to: scaled.extent)
+        let context = CIContext(options: [.useSoftwareRenderer: false])
+        guard let cg = context.createCGImage(blurred, from: scaled.extent) else { return nil }
+        let image = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
         cache[url] = image
         return image
     }

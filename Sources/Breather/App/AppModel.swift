@@ -5,6 +5,15 @@ import Observation
 struct PauseOption: Identifiable {
     let id: String
     let title: String
+    var shortTitle: String {
+        switch id {
+        case "30m": "30 min"
+        case "1h": "1 hr"
+        case "2h": "2 hr"
+        case "tomorrow": "Rest of day"
+        default: "Until resumed"
+        }
+    }
     /// nil = until resumed.
     let duration: () -> TimeInterval?
 
@@ -48,6 +57,7 @@ final class AppModel {
     @ObservationIgnored private var lastPauseNag = Date()
     @ObservationIgnored private var lastSmartReasons: [PauseReason] = []
     @ObservationIgnored private let settingsWindow = SettingsWindowController()
+    @ObservationIgnored private let welcome = WelcomeWindowController()
 
     private static let snapshotKey = "engine.snapshot"
 
@@ -55,8 +65,15 @@ final class AppModel {
         engine = BreakEngine(settings: store.settings)
     }
 
+    /// Puts the model in a representative state for `--render-snapshots`.
+    func prepareForSnapshots() {
+        notch.attach(engine)
+        engine.setWorkElapsedForPreview(engine.workTarget - 58)
+    }
+
     func start() {
         notch.attach(engine)
+        notch.reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         store.onChange = { [weak self] old, new in self?.settingsChanged(old: old, new: new) }
         engine.onEvent = { [weak self] event in self?.handle(event) }
 
@@ -86,10 +103,14 @@ final class AppModel {
         self.timer = timer
         tick()
 
-        if !UserDefaults.standard.bool(forKey: "onboarded") {
-            UserDefaults.standard.set(true, forKey: "onboarded")
-            notch.show(NotchToast(symbol: "eye", tint: .breatherMint, title: "Breather is running",
-                                  subtitle: "Hover the notch any time to see your next break."), for: 8)
+        let testingAnimation = CommandLine.arguments.contains("--animation-test")
+        AnimationRecorder.runIfRequested(app: self) { [weak self] in self?.notchController?.hostView }
+        if !testingAnimation, !UserDefaults.standard.bool(forKey: "welcomed") {
+            welcome.show(app: self) { [weak self] in
+                UserDefaults.standard.set(true, forKey: "welcomed")
+                self?.notch.show(NotchToast(symbol: "checkmark.circle.fill", tint: Brand.mint, title: "Breather is running",
+                                            subtitle: "It'll stay out of the way until a break is near."), for: 6)
+            }
         }
     }
 
@@ -129,7 +150,7 @@ final class AppModel {
         defer { lastSmartReasons = reasons }
         // Only worth a toast if a break was close and is now being held off.
         guard let first = reasons.first, lastSmartReasons.isEmpty, engine.timeUntilBreak < 120 else { return }
-        notch.show(NotchToast(symbol: first.symbol, tint: .cyan, title: "Break on hold",
+        notch.show(NotchToast(symbol: first.symbol, tint: Brand.sky, title: "Break on hold",
                               subtitle: first.title + " · it'll wait until you're done"), for: 5)
     }
 
@@ -140,7 +161,7 @@ final class AppModel {
         }
         if now.timeIntervalSince(lastPauseNag) > 60 * 60 {
             lastPauseNag = now
-            notch.show(NotchToast(symbol: "pause.circle.fill", tint: .orange, title: "Breaks are still paused",
+            notch.show(NotchToast(symbol: "pause.circle.fill", tint: Brand.amber, title: "Breaks are still paused",
                                   subtitle: "It's been over an hour.", action: .resume, actionTitle: "Resume"), for: 12)
         }
     }
@@ -167,15 +188,13 @@ final class AppModel {
             if completed {
                 log.append(BreakLogEntry(date: .now, outcome: .taken, kind: session.kind, seconds: session.duration))
                 if settings.soundEnabled { Sound.play(settings.breakEndSound, volume: settings.soundVolume) }
-                notch.show(NotchToast(symbol: "checkmark.circle.fill", tint: .breatherMint, title: "Nice — break done",
-                                      subtitle: "Next one in \(Format.spoken(settings.workSeconds))"), for: 4)
             }
 
         case .breakSkipped(let kind, let inAdvance):
             overlay?.hide()
             log.append(BreakLogEntry(date: .now, outcome: inAdvance ? .skippedInAdvance : .skipped, kind: kind))
             if inAdvance {
-                notch.show(NotchToast(symbol: "forward.fill", tint: .orange, title: "Skipped this break",
+                notch.show(NotchToast(symbol: "forward.fill", tint: Brand.amber, title: "Skipped this break",
                                       subtitle: "As you asked. Next one in \(Format.spoken(settings.workSeconds))"), for: 5)
             }
 
@@ -183,7 +202,7 @@ final class AppModel {
             overlay?.hide()
             notch.dismissHeadsUp()
             log.append(BreakLogEntry(date: .now, outcome: .snoozed, seconds: seconds))
-            notch.show(NotchToast(symbol: "clock.arrow.circlepath", tint: .orange, title: "Break in \(Format.spoken(seconds))",
+            notch.show(NotchToast(symbol: "clock.arrow.circlepath", tint: Brand.amber, title: "Break in \(Format.spoken(seconds))",
                                   subtitle: snoozeSubtitle), for: 3)
 
         case .naturalBreak(let away, let kind):
@@ -302,11 +321,11 @@ final class AppModel {
 
     var statusTitle: String {
         switch engine.phase {
-        case .working, .onBreak: "\(engine.nextBreakKind.title) in \(Format.spoken(engine.timeUntilBreak))"
+        case .working, .onBreak: "\(engine.nextBreakKind == .long ? "Long break" : "Break") in \(Format.compact(engine.timeUntilBreak))"
         case .holding(.typing): "Waiting for a pause in typing"
         case .holding(.afterActivity): "Break in a moment"
         case .smartPaused(let reasons): reasons.first?.title ?? "On hold"
-        case .paused(let until): until.map { "Paused for \(Format.spoken($0.timeIntervalSinceNow))" } ?? "Paused"
+        case .paused(let until): until.map { "Paused · \(Format.compact($0.timeIntervalSinceNow)) left" } ?? "Paused"
         case .away: "Away"
         case .offHours: "Outside office hours"
         }

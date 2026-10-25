@@ -1,24 +1,21 @@
 import SwiftUI
 
+/// The island. One persistent black shape whose size morphs between states, with each
+/// state's content laid out at its *own* fixed size. When the island shrinks, the
+/// outgoing content keeps its layout and is simply clipped and faded instead of
+/// reflowing — that's what keeps the close animation clean.
 struct NotchView: View {
     let app: AppModel
     let geometry: NotchGeometry
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var settings: Settings { app.store.settings }
     private var content: NotchContent { app.notch.content }
-    private var notchSize: CGSize {
-        geometry.hasNotch ? geometry.notch.size : CGSize(width: 0, height: 0)
-    }
-    private var bodySize: CGSize {
-        NotchLayout.size(for: content, notch: notchSize, liveActivity: settings.notchLiveActivity && geometry.hasNotch)
-    }
+    private var notchSize: CGSize { geometry.hasNotch ? geometry.notch.size : .zero }
     private var shoulder: CGFloat { geometry.hasNotch ? NotchLayout.shoulder : 0 }
+
     private var visible: Bool {
         switch content {
         case .hidden: false
-        case .resting: geometry.hasNotch
+        case .resting, .peek: geometry.hasNotch
         default: true
         }
     }
@@ -30,75 +27,114 @@ struct NotchView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    @ViewBuilder
-    private var island: some View {
-        let shape = geometry.hasNotch
-            ? AnyShape(NotchShape(topRadius: shoulder, bottomRadius: NotchLayout.bottomRadius(for: content)))
-            : AnyShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-
-        ZStack(alignment: .top) {
-            shape.fill(Color.black)
-            inner
-                .padding(.horizontal, shoulder)
-                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-                .id(contentKey)
-        }
-        .frame(width: bodySize.width + 2 * shoulder, height: max(bodySize.height, geometry.hasNotch ? 0 : 56))
-        .clipShape(shape)
-        .shadow(color: .black.opacity(content == .resting ? 0 : 0.35), radius: 18, y: 8)
-        .opacity(visible ? 1 : 0)
-        .scaleEffect(geometry.hasNotch || visible ? 1 : 0.85, anchor: .top)
-        .animation(reduceMotion ? .easeInOut(duration: 0.15) : .spring(response: 0.42, dampingFraction: 0.78), value: content)
         .environment(\.colorScheme, .dark)
     }
 
-    private var contentKey: String {
-        switch content {
-        case .resting: "resting"
-        case .expanded: "expanded"
-        case .headsUp: "headsUp"
-        case .countdown: "countdown"
-        case .toast(let t): "toast-\(t.id)"
-        case .hidden: "hidden"
+    private var island: some View {
+        let size = islandSize(for: content)
+        let shape = islandShape
+        return ZStack(alignment: .top) {
+            shape.fill(Color.black)
+            IslandContent(app: app, content: content, geometry: geometry)
+                .id(content.key)
+                .transition(.island)
         }
+        .frame(width: size.width + 2 * shoulder, height: size.height, alignment: .top)
+        .clipShape(shape)
+        .shadow(color: .black.opacity(content.openness >= 2 ? 0.4 : 0), radius: 22, y: 10)
+        .opacity(visible ? 1 : 0)
+        .scaleEffect(geometry.hasNotch || visible ? 1 : 0.9, anchor: .top)
     }
 
-    @ViewBuilder
-    private var inner: some View {
-        VStack(spacing: 0) {
-            if geometry.hasNotch {
-                ears.frame(height: notchSize.height)
-            }
-            switch content {
-            case .resting, .hidden: EmptyView()
-            case .expanded: DashboardView(app: app)
-            case .headsUp(let kind): HeadsUpView(app: app, kind: kind)
-            case .countdown: CountdownView(app: app)
-            case .toast(let toast): ToastView(app: app, toast: toast)
-            }
-        }
+    private var islandShape: AnyShape {
+        geometry.hasNotch
+            ? AnyShape(NotchShape(topRadius: shoulder, bottomRadius: NotchLayout.bottomRadius(for: content)))
+            : AnyShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 
-    /// The "live activity" that flanks the hardware notch.
-    @ViewBuilder
-    private var ears: some View {
-        let showEars = settings.notchLiveActivity || content != .resting
-        HStack(spacing: 0) {
-            StatusGlyph(engine: app.engine)
-                .frame(width: 16, height: 16)
-                .frame(width: NotchLayout.earWidth, alignment: .center)
-            Spacer(minLength: notchSize.width)
-            StatusTime(engine: app.engine)
-                .frame(width: NotchLayout.earWidth, alignment: .center)
-        }
-        .opacity(showEars ? 1 : 0)
-        .frame(maxWidth: .infinity)
+    private func islandSize(for content: NotchContent) -> CGSize {
+        var size = NotchLayout.size(for: content, notch: notchSize)
+        if !geometry.hasNotch { size.height = max(size.height, NotchLayout.pillMinHeight) }
+        return size
     }
 }
 
-// MARK: - Status
+/// One state's content at its own fixed size.
+private struct IslandContent: View {
+    let app: AppModel
+    let content: NotchContent
+    let geometry: NotchGeometry
+
+    var body: some View {
+        let notch = geometry.hasNotch ? geometry.notch.size : .zero
+        let size = NotchLayout.size(for: content, notch: notch)
+        let below = NotchLayout.contentSize(for: content, notch: notch)
+        VStack(spacing: 0) {
+            if geometry.hasNotch {
+                Group {
+                    if content == .peek { PeekEars(engine: app.engine, notchWidth: notch.width) } else { Color.clear }
+                }
+                .frame(width: size.width, height: notch.height)
+            }
+            detail
+                .frame(width: below.width, height: max(below.height, geometry.hasNotch ? 0 : NotchLayout.pillMinHeight), alignment: .top)
+        }
+        .frame(width: size.width, alignment: .top)
+        .foregroundStyle(.white)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        switch content {
+        case .resting, .hidden, .peek: Color.clear
+        case .expanded: DashboardView(app: app)
+        case .headsUp(let kind): HeadsUpView(app: app, kind: kind)
+        case .countdown: CountdownView(app: app)
+        case .toast(let toast): ToastView(app: app, toast: toast)
+        }
+    }
+}
+
+private struct IslandFade: ViewModifier {
+    var progress: Double
+    func body(content: Content) -> some View {
+        content
+            .opacity(progress)
+            .blur(radius: (1 - progress) * 5)
+            .scaleEffect(0.97 + 0.03 * progress, anchor: .top)
+    }
+}
+
+extension AnyTransition {
+    /// New content fades in once the shape has started growing; old content leaves fast
+    /// so it's gone before the shape finishes shrinking.
+    static var island: AnyTransition {
+        .asymmetric(
+            insertion: .modifier(active: IslandFade(progress: 0), identity: IslandFade(progress: 1))
+                .animation(.easeOut(duration: 0.24).delay(0.09)),
+            removal: .modifier(active: IslandFade(progress: 0), identity: IslandFade(progress: 1))
+                .animation(.easeIn(duration: 0.11))
+        )
+    }
+}
+
+// MARK: - Peek (live activity)
+
+private struct PeekEars: View {
+    let engine: BreakEngine
+    let notchWidth: CGFloat
+
+    var body: some View {
+        HStack(spacing: 0) {
+            StatusGlyph(engine: engine)
+                .frame(width: 15, height: 15)
+                .frame(width: NotchLayout.earWidth)
+            Spacer(minLength: notchWidth)
+            StatusTime(engine: engine)
+                .frame(width: NotchLayout.earWidth)
+        }
+    }
+}
 
 struct StatusGlyph: View {
     let engine: BreakEngine
@@ -106,20 +142,22 @@ struct StatusGlyph: View {
     var body: some View {
         switch engine.phase {
         case .working, .onBreak:
-            ProgressRing(progress: engine.workProgress, color: engine.timeUntilBreak <= 60 ? .orange : .breatherMint, lineWidth: 2.5)
+            ProgressRing(progress: engine.workProgress, color: engine.timeUntilBreak <= 60 ? Brand.amber : Brand.mint, lineWidth: 2.5)
         case .holding(let reason):
-            Image(systemName: reason == .typing ? "keyboard" : "hourglass")
-                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+            symbol(reason == .typing ? "keyboard" : "hourglass", Brand.amber)
         case .smartPaused(let reasons):
-            Image(systemName: reasons.first?.symbol ?? "pause.fill")
-                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.cyan)
+            symbol(reasons.first?.symbol ?? "pause.fill", Brand.sky)
         case .paused:
-            Image(systemName: "pause.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white.opacity(0.6))
+            symbol("pause.fill", .white.opacity(0.55))
         case .away:
-            Image(systemName: "moon.zzz.fill").font(.system(size: 11)).foregroundStyle(.white.opacity(0.6))
+            symbol("moon.zzz.fill", .white.opacity(0.55))
         case .offHours:
-            Image(systemName: "moon.fill").font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
+            symbol("moon.fill", .white.opacity(0.45))
         }
+    }
+
+    private func symbol(_ name: String, _ color: Color) -> some View {
+        Image(systemName: name).font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
     }
 }
 
@@ -138,7 +176,8 @@ struct StatusTime: View {
 
     private var text: String {
         switch engine.phase {
-        case .working, .holding, .smartPaused, .onBreak: Format.short(engine.timeUntilBreak)
+        case .working, .holding, .smartPaused, .onBreak:
+            engine.timeUntilBreak < 600 ? Format.clock(engine.timeUntilBreak) : Format.short(engine.timeUntilBreak)
         case .paused(let until): until.map { Format.short($0.timeIntervalSinceNow) } ?? "Off"
         case .away: "Away"
         case .offHours: "Off"
@@ -147,11 +186,32 @@ struct StatusTime: View {
 
     private var color: Color {
         switch engine.phase {
-        case .working: engine.timeUntilBreak <= 60 ? .orange : .white.opacity(0.9)
-        case .holding: .orange
-        case .smartPaused: .cyan
-        default: .white.opacity(0.55)
+        case .working: engine.timeUntilBreak <= 60 ? Brand.amber : .white.opacity(0.92)
+        case .holding: Brand.amber
+        case .smartPaused: Brand.sky
+        default: .white.opacity(0.5)
         }
+    }
+}
+
+// MARK: - Shared pieces
+
+/// Leading badge used across island states.
+struct IslandBadge: View {
+    var symbol: String? = nil
+    var tint: Color = Brand.mint
+
+    var body: some View {
+        ZStack {
+            Circle().fill(tint.opacity(0.18))
+            if let symbol {
+                Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint)
+            } else {
+                BreatherMark(color: tint, rippleOpacity: 0.6)
+                    .frame(width: 20, height: 20)
+            }
+        }
+        .frame(width: 36, height: 36)
     }
 }
 
@@ -163,27 +223,29 @@ struct HeadsUpView: View {
 
     var body: some View {
         let engine = app.engine
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(kind == .long ? "Long break coming up" : "Eye break coming up")
-                        .font(.system(size: 14, weight: .semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                IslandBadge(tint: Brand.amber)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(kind == .long ? "Long break soon" : "Eye break soon")
+                        .font(.system(size: 15, weight: .semibold))
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Text(Format.clock(engine.timeUntilBreak))
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Brand.amber)
             }
-            HStack(spacing: 6) {
-                IslandButton(title: "Start now", symbol: "eye", style: .primary) { app.breakNow() }
+            HStack(spacing: 8) {
+                IslandButton(title: "Start now", style: .primary) { app.breakNow() }
                 if engine.canSnooze {
-                    IslandButton(title: "+1m") { app.snooze(60) }
-                    IslandButton(title: "+5m") { app.snooze(5 * 60) }
+                    IslandButton(title: "+1 min") { app.snooze(60) }
+                    IslandButton(title: "+5 min") { app.snooze(5 * 60) }
                 }
                 Spacer()
                 if engine.canSkipInAdvance {
@@ -192,15 +254,13 @@ struct HeadsUpView: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.top, 6)
-        .padding(.bottom, 14)
-        .foregroundStyle(.white)
+        .padding(.top, 8)
     }
 
     private var subtitle: String {
-        let length = kind == .long ? app.store.settings.longBreakSeconds : app.store.settings.breakSeconds
-        let wait = app.store.settings.waitForTypingPause ? " · waits for a pause in typing" : ""
-        return Format.spoken(length) + wait
+        let s = app.store.settings
+        let length = kind == .long ? s.longBreakSeconds : s.breakSeconds
+        return Format.spoken(length) + (s.waitForTypingPause ? " · waits for a pause" : "")
     }
 }
 
@@ -212,27 +272,29 @@ struct CountdownView: View {
     var body: some View {
         let engine = app.engine
         let lead = max(1, app.store.settings.finalCountdownSeconds)
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Look away in").font(.system(size: 13, weight: .semibold))
-                Text(engine.nextBreakKind.title).font(.system(size: 11)).foregroundStyle(.white.opacity(0.55))
+        let seconds = Int(engine.timeUntilBreak.rounded(.up))
+        HStack(spacing: 12) {
+            IslandBadge(tint: Brand.amber)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Look away").font(.system(size: 15, weight: .semibold))
+                Text(engine.nextBreakKind.title).font(.system(size: 12)).foregroundStyle(.white.opacity(0.55))
             }
             Spacer()
             if engine.canSnooze {
-                IslandButton(title: "+1m", style: .subtle) { app.snooze(60) }
+                IslandButton(title: "+1 min", style: .subtle) { app.snooze(60) }
             }
             ZStack {
-                ProgressRing(progress: engine.timeUntilBreak / lead, color: .orange, lineWidth: 3.5)
-                Text("\(Int(engine.timeUntilBreak.rounded(.up)))")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                ProgressRing(progress: engine.timeUntilBreak / lead, color: Brand.amber, lineWidth: 3.5)
+                    .animation(.linear(duration: 1), value: seconds)
+                Text("\(seconds)")
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
                     .contentTransition(.numericText(countsDown: true))
+                    .animation(.snappy, value: seconds)
             }
-            .frame(width: 42, height: 42)
+            .frame(width: 40, height: 40)
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 10)
-        .foregroundStyle(.white)
-        .animation(.easeInOut(duration: 0.3), value: Int(engine.timeUntilBreak.rounded(.up)))
+        .padding(.top, 6)
     }
 }
 
@@ -244,24 +306,20 @@ struct ToastView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: toast.symbol)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(toast.tint)
-                .frame(width: 26)
+            IslandBadge(symbol: toast.symbol, tint: toast.tint)
             VStack(alignment: .leading, spacing: 1) {
-                Text(toast.title).font(.system(size: 13, weight: .semibold))
+                Text(toast.title).font(.system(size: 14, weight: .semibold))
                 if let subtitle = toast.subtitle {
-                    Text(subtitle).font(.system(size: 11)).foregroundStyle(.white.opacity(0.55))
+                    Text(subtitle).font(.system(size: 12)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
                 }
             }
-            Spacer()
+            Spacer(minLength: 8)
             if let action = toast.action {
                 IslandButton(title: toast.actionTitle ?? "Undo") { app.perform(action) }
             }
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 10)
-        .foregroundStyle(.white)
+        .padding(.top, 6)
     }
 }
 
@@ -276,78 +334,89 @@ struct DashboardView: View {
             HStack(spacing: 14) {
                 ZStack {
                     ProgressRing(progress: engine.workProgress, color: ringColor, lineWidth: 5)
-                    VStack(spacing: -1) {
-                        Text(Format.clock(engine.timeUntilBreak))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .contentTransition(.numericText(countsDown: true))
-                        Text("left").font(.system(size: 9)).foregroundStyle(.white.opacity(0.5))
-                    }
+                    Text(Format.clock(engine.timeUntilBreak))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText(countsDown: true))
                 }
-                .frame(width: 62, height: 62)
+                .frame(width: 60, height: 60)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(app.statusTitle).font(.system(size: 15, weight: .semibold))
-                    Text(app.statusSubtitle).font(.system(size: 11)).foregroundStyle(.white.opacity(0.55))
-                        .lineLimit(2)
-                    if engine.skipNextPending {
-                        Label("Next break will be skipped", systemImage: "forward.fill")
-                            .font(.system(size: 10, weight: .medium)).foregroundStyle(.orange)
-                    }
+                    Text(app.statusTitle).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                    Text(app.statusSubtitle).font(.system(size: 12)).foregroundStyle(.white.opacity(0.55)).lineLimit(2)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    StatPill(value: app.log.takenToday, label: "taken", color: .breatherMint)
-                    StatPill(value: app.log.skippedToday, label: "skipped", color: .white.opacity(0.5))
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(app.log.takenToday)")
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Brand.mint)
+                    Text("breaks today").font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
                 }
             }
 
-            HStack(spacing: 6) {
-                IslandButton(title: "Break now", symbol: "eye", style: .primary) { app.breakNow() }
+            HStack(spacing: 8) {
+                IslandTile(title: "Break now", symbol: "eye.fill", tint: Brand.mint) { app.breakNow() }
                 if case .paused = engine.phase {
-                    IslandButton(title: "Resume", symbol: "play.fill") { app.resume() }
+                    IslandTile(title: "Resume", symbol: "play.fill", tint: Brand.mint, active: true) { app.resume() }
                 } else {
-                    PauseMenu(app: app)
+                    PauseTile(app: app)
                 }
-                if engine.canSkipInAdvance || engine.skipNextPending {
-                    IslandButton(title: engine.skipNextPending ? "Don't skip" : "Skip next", symbol: "forward.end") {
-                        app.engine.toggleSkipNext()
-                    }
+                IslandTile(title: engine.skipNextPending ? "Skipping" : "Skip next", symbol: "forward.end.fill",
+                           tint: Brand.amber, active: engine.skipNextPending) {
+                    app.engine.toggleSkipNext()
                 }
-                Spacer()
-                IslandButton(title: "", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
+                .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
+                IslandTile(title: "Settings", symbol: "gearshape.fill", tint: .white) { app.openSettings() }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 16)
-        .foregroundStyle(.white)
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
     }
 
     private var ringColor: Color {
         switch app.engine.phase {
-        case .smartPaused: .cyan
-        case .holding: .orange
+        case .smartPaused: Brand.sky
+        case .holding: Brand.amber
         case .paused, .away, .offHours: .white.opacity(0.4)
-        default: app.engine.timeUntilBreak <= 60 ? .orange : .breatherMint
+        default: app.engine.timeUntilBreak <= 60 ? Brand.amber : Brand.mint
         }
     }
 }
 
-struct StatPill: View {
-    var value: Int
-    var label: String
-    var color: Color
+/// Control Center–style square-ish tile.
+struct IslandTile: View {
+    var title: String
+    var symbol: String
+    var tint: Color
+    var active = false
+    var action: () -> Void
+    @State private var hovering = false
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
-        HStack(spacing: 4) {
-            Text("\(value)").font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(color)
-            Text(label).font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
+        Button(action: action) { label }
+            .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .opacity(isEnabled ? 1 : 0.4)
+    }
+
+    var label: some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(active ? .black : tint)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(active ? tint : .white.opacity(0.12)))
+            Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.85))
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 9)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(hovering ? 0.12 : 0.07)))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
-struct PauseMenu: View {
+private struct PauseTile: View {
     let app: AppModel
 
     var body: some View {
@@ -356,18 +425,10 @@ struct PauseMenu: View {
                 Button(option.title) { app.pause(option) }
             }
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold))
-                Text("Pause").font(.system(size: 12, weight: .semibold))
-            }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(.white.opacity(0.14)))
-            .foregroundStyle(.white)
+            IslandTile(title: "Pause", symbol: "pause.fill", tint: .white) {}.label
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        .fixedSize()
     }
 }

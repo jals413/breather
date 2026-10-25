@@ -20,13 +20,75 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .general: "gearshape"
-        case .breaks: "eye"
+        case .general: "gearshape.fill"
+        case .breaks: "eye.fill"
         case .notch: "rectangle.topthird.inset.filled"
-        case .smartPause: "brain.head.profile"
+        case .smartPause: "brain.head.profile.fill"
         case .schedule: "calendar"
         case .shortcuts: "command"
-        case .about: "info.circle"
+        case .about: "info"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .general: .gray
+        case .breaks: Brand.teal
+        case .notch: .black
+        case .smartPause: .indigo
+        case .schedule: .red
+        case .shortcuts: .blue
+        case .about: Brand.ocean
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .general: "Set your rhythm: how long you work and how long you rest."
+        case .breaks: "Choose how strict breaks are, and how they look and sound."
+        case .notch: "Breather lives in your notch. Decide what it shows and when."
+        case .smartPause: "Breaks wait while you're in a call, watching, presenting or mid-sentence."
+        case .schedule: "Only get reminders during the hours you work."
+        case .shortcuts: "Control Breather from anywhere with global shortcuts."
+        case .about: Brand.tagline
+        }
+    }
+}
+
+/// System Settings–style coloured squircle icon.
+struct SettingsBadge: View {
+    var symbol: String
+    var tint: Color
+    var size: CGFloat = 22
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.55, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(
+                RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+                    .fill(tint.gradient)
+            )
+    }
+}
+
+/// The large header at the top of each pane, like System Settings.
+struct PaneHeader: View {
+    var pane: SettingsPane
+
+    var body: some View {
+        Section {
+            VStack(spacing: 8) {
+                SettingsBadge(symbol: pane.symbol, tint: pane.tint, size: 52)
+                Text(pane.title).font(.title2.bold())
+                Text(pane.summary)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
         }
     }
 }
@@ -38,7 +100,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             List(SettingsPane.allCases, selection: $pane) { pane in
-                Label(pane.title, systemImage: pane.symbol).tag(pane)
+                HStack(spacing: 8) {
+                    SettingsBadge(symbol: pane.symbol, tint: pane.tint)
+                    Text(pane.title)
+                }
+                .tag(pane)
             }
             .navigationSplitViewColumnWidth(190)
         } detail: {
@@ -54,7 +120,7 @@ struct SettingsView: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(pane.title)
+            .navigationTitle("")
         }
         .frame(minWidth: 720, minHeight: 520)
     }
@@ -68,6 +134,7 @@ private struct GeneralPane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .general)
             Section("Rhythm") {
                 Picker("Preset", selection: presetBinding) {
                     Text("Custom").tag("Custom")
@@ -85,7 +152,10 @@ private struct GeneralPane: View {
             }
             Section("System") {
                 Toggle("Launch at login", isOn: $store.settings.launchAtLogin)
-                Toggle("Show time until break in the menu bar", isOn: $store.settings.menuBarShowsTime)
+                Toggle("Show icon in the menu bar", isOn: $store.settings.showMenuBarIcon)
+                if store.settings.showMenuBarIcon {
+                    Toggle("Show time until break next to the icon", isOn: $store.settings.menuBarShowsTime)
+                }
             }
         }
     }
@@ -115,6 +185,7 @@ private struct BreaksPane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .breaks)
             Section {
                 Picker("Skip difficulty", selection: $store.settings.difficulty) {
                     ForEach(SkipDifficulty.allCases) { Text($0.title).tag($0) }
@@ -217,14 +288,23 @@ private struct NotchPane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .notch)
             Section {
-                Toggle("Show a live countdown beside the notch", isOn: $store.settings.notchLiveActivity)
+                Toggle("Show a countdown beside the notch", isOn: $store.settings.notchLiveActivity)
+                if store.settings.notchLiveActivity {
+                    Picker("Show it", selection: $store.settings.notchRevealSeconds) {
+                        Text("Always").tag(0.0)
+                        Text("In the last 10 minutes").tag(600.0)
+                        Text("In the last 5 minutes").tag(300.0)
+                        Text("In the last 2 minutes").tag(120.0)
+                    }
+                }
                 Toggle("Expand the notch on hover", isOn: $store.settings.notchHoverExpands)
                 Toggle("Show alerts as a pill on displays without a notch", isOn: $store.settings.pillOnScreensWithoutNotch)
             } header: {
                 Text("Notch")
             } footer: {
-                Text("On a MacBook with a notch, the island grows out of it. Other displays get a floating pill under the menu bar.")
+                Text("On a MacBook with a notch, the island grows out of it. Other displays get a floating pill under the menu bar. Hover the notch to peek at your next break.")
             }
 
             Section("Heads-up before a break") {
@@ -256,6 +336,7 @@ private struct SmartPausePane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .smartPause)
             Section {
                 HStack {
                     Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(.secondary)
@@ -410,6 +491,7 @@ private struct SchedulePane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .schedule)
             Section {
                 Toggle("Only remind me during office hours", isOn: $store.settings.officeHours.enabled)
             } footer: {
@@ -467,6 +549,7 @@ private struct ShortcutsPane: View {
     var body: some View {
         @Bindable var store = app.store
         Form {
+            PaneHeader(pane: .shortcuts)
             Section {
                 ShortcutRow(title: "Take a break now", key: $store.settings.hotKeys.breakNow)
                 ShortcutRow(title: "Pause / resume", key: $store.settings.hotKeys.togglePause)
@@ -525,14 +608,14 @@ private struct AboutPane: View {
         Form {
             Section {
                 HStack(spacing: 14) {
-                    Image(systemName: "eye.circle.fill").font(.system(size: 44)).foregroundStyle(Color.breatherMint)
+                    BreatherAppIcon().frame(width: 64, height: 64)
                     VStack(alignment: .leading) {
                         Text("Breather").font(.title2.bold())
                         Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
                             .foregroundStyle(.secondary)
                     }
                 }
-                Text("Smart break reminders that live in your notch. No accounts, no telemetry — everything stays on this Mac.")
+                Text("\(Brand.tagline) Smart break reminders that live in your notch. No accounts, no telemetry — everything stays on this Mac.")
                     .foregroundStyle(.secondary)
             }
             Section {

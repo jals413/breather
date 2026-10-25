@@ -110,10 +110,14 @@ struct Settings: Codable, Equatable {
     var headsUpEnabled = true
     var headsUpLeadSeconds: Double = 60
     var finalCountdownSeconds: Double = 5
+    /// Countdown "ears" beside the notch.
     var notchLiveActivity = true
+    /// Show the ears only this long before a break; 0 = always.
+    var notchRevealSeconds: Double = 0
     var notchHoverExpands = true
     var pillOnScreensWithoutNotch = true
-    var menuBarShowsTime = true
+    var showMenuBarIcon = true
+    var menuBarShowsTime = false
 
     // Smart pause
     var pauseForMeetings = true

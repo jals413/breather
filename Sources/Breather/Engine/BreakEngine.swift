@@ -355,6 +355,9 @@ final class BreakEngine {
         undoableNaturalBreak = nil
     }
 
+    /// For previews and snapshot rendering only.
+    func setWorkElapsedForPreview(_ seconds: TimeInterval) { workElapsed = seconds }
+
     // MARK: Persistence
 
     func snapshot(now: Date = .now) -> EngineSnapshot {

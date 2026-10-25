@@ -4,130 +4,171 @@ struct MenuBarLabel: View {
     let app: AppModel
 
     var body: some View {
-        let settings = app.store.settings
         HStack(spacing: 4) {
-            Image(systemName: symbol)
-            if settings.menuBarShowsTime, let text {
+            Image(nsImage: BrandImages.menuBarIcon(paused: isPaused))
+            if app.store.settings.menuBarShowsTime, let text {
                 Text(text).monospacedDigit()
             }
         }
     }
 
-    private var symbol: String {
+    private var isPaused: Bool {
         switch app.engine.phase {
-        case .paused, .offHours: "eye.slash"
-        case .smartPaused: "eye.trianglebadge.exclamationmark"
-        case .onBreak: "eye.fill"
-        default: "eye"
+        case .paused, .offHours: true
+        default: false
         }
     }
 
     private var text: String? {
         switch app.engine.phase {
         case .working, .holding, .smartPaused: Format.short(app.engine.timeUntilBreak)
-        case .paused: "Paused"
         default: nil
         }
     }
 }
 
+/// Control Center–style popover: a status card, round toggles, then quiet text actions.
 struct MenuBarView: View {
     let app: AppModel
 
     var body: some View {
         let engine = app.engine
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                ZStack {
-                    ProgressRing(progress: engine.workProgress, color: .breatherMint, lineWidth: 4, track: .secondary.opacity(0.2))
-                    Image(systemName: "eye").font(.system(size: 13, weight: .semibold))
-                }
-                .frame(width: 38, height: 38)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(app.statusTitle).font(.headline)
-                    Text(app.statusSubtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                }
-            }
+        VStack(spacing: 10) {
+            StatusCard(app: app)
 
-            HStack {
-                Label("\(app.log.takenToday) taken", systemImage: "checkmark.circle")
-                Spacer()
-                Label("\(app.log.skippedToday) skipped", systemImage: "forward")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            Divider()
-
-            VStack(spacing: 2) {
-                MenuRow(title: "Take a break now", symbol: "eye", shortcut: app.store.settings.hotKeys.breakNow) { app.breakNow() }
+            HStack(spacing: 10) {
+                RoundToggle(title: "Break now", symbol: "eye.fill", isOn: false) { app.breakNow() }
                     .disabled(engine.isOnBreak)
-                MenuRow(title: "Take a long break", symbol: "figure.walk") { engine.startBreak(kind: .long) }
-                    .disabled(engine.isOnBreak)
-                if engine.skipNextPending {
-                    MenuRow(title: "Don't skip next break", symbol: "arrow.uturn.backward", shortcut: app.store.settings.hotKeys.skipNext) { engine.toggleSkipNext() }
-                } else {
-                    MenuRow(title: "Skip next break", symbol: "forward.end", shortcut: app.store.settings.hotKeys.skipNext) { engine.toggleSkipNext() }
-                        .disabled(!engine.canSkipInAdvance)
+                RoundToggle(title: isPaused ? "Paused" : "Pause", symbol: "pause.fill", isOn: isPaused) { app.togglePause() }
+                RoundToggle(title: "Skip next", symbol: "forward.end.fill", isOn: engine.skipNextPending, tint: Brand.amber) {
+                    engine.toggleSkipNext()
                 }
-                MenuRow(title: "Restart timer", symbol: "arrow.counterclockwise") { engine.restartCycle() }
+                .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
+                RoundToggle(title: "Long break", symbol: "figure.walk", isOn: false) { engine.startBreak(kind: .long) }
+                    .disabled(engine.isOnBreak)
             }
+            .padding(12)
+            .background(Card())
 
-            Divider()
-
-            if case .paused = engine.phase {
-                MenuRow(title: "Resume", symbol: "play.fill", shortcut: app.store.settings.hotKeys.togglePause) { app.resume() }
-            } else {
-                Text("Pause").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 8)
-                VStack(spacing: 2) {
-                    ForEach(PauseOption.all) { option in
-                        MenuRow(title: option.title, symbol: "pause") { app.pause(option) }
+            if !isPaused {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Pause for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        ForEach(PauseOption.all.prefix(4)) { option in
+                            Chip(title: option.shortTitle) { app.pause(option) }
+                        }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(Card())
             }
 
-            Divider()
-
             HStack {
+                Button("Restart timer") { engine.restartCycle() }
+                Spacer()
                 Button("Settings…") { app.openSettings() }
                     .keyboardShortcut(",")
-                Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")
             }
             .buttonStyle(.borderless)
-            .padding(.horizontal, 8)
+            .font(.callout)
+            .padding(.horizontal, 6)
+            .padding(.top, 2)
         }
-        .padding(14)
-        .frame(width: 290)
+        .padding(12)
+        .frame(width: 320)
+    }
+
+    private var isPaused: Bool {
+        if case .paused = app.engine.phase { return true }
+        return false
     }
 }
 
-struct MenuRow: View {
+private struct Card: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(.quaternary.opacity(0.5))
+    }
+}
+
+private struct StatusCard: View {
+    let app: AppModel
+
+    var body: some View {
+        let engine = app.engine
+        HStack(spacing: 14) {
+            ZStack {
+                ProgressRing(progress: engine.workProgress, color: Brand.mint, lineWidth: 5, track: .secondary.opacity(0.18))
+                BreatherMark(color: .primary, rippleOpacity: 0.5)
+                    .frame(width: 22, height: 22)
+            }
+            .frame(width: 50, height: 50)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(app.statusTitle).font(.headline).lineLimit(1)
+                Text(app.statusSubtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            }
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: 0) {
+                Text("\(app.log.takenToday)").font(.system(size: 22, weight: .semibold, design: .rounded))
+                Text("today").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .background(Card())
+    }
+}
+
+/// Round Control Center–style toggle with a label underneath.
+private struct RoundToggle: View {
     var title: String
     var symbol: String
-    var shortcut: HotKey? = nil
+    var isOn: Bool
+    var tint: Color = Brand.teal
     var action: () -> Void
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: symbol).frame(width: 18)
-                Text(title)
-                Spacer()
-                if let shortcut, shortcut.enabled {
-                    Text(shortcut.displayString).foregroundStyle(.secondary).font(.caption)
-                }
+            VStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isOn ? .white : .primary)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.quaternary)))
+                    .overlay(Circle().fill(.primary.opacity(hovering && isEnabled ? 0.08 : 0)))
+                Text(title).font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 6).fill(hovering && isEnabled ? Color.accentColor.opacity(0.18) : .clear))
+            .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .opacity(isEnabled ? 1 : 0.45)
+        .opacity(isEnabled ? 1 : 0.4)
+    }
+}
+
+private struct Chip: View {
+    var title: String
+    var action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity)
+                .background(Capsule().fill(.quaternary.opacity(hovering ? 1 : 0.6)))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }

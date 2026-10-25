@@ -7,7 +7,8 @@ struct BreatherApp: App {
     private let app = AppModel.shared
 
     var body: some Scene {
-        MenuBarExtra {
+        @Bindable var store = app.store
+        MenuBarExtra(isInserted: $store.settings.showMenuBarIcon) {
             MenuBarView(app: app)
         } label: {
             MenuBarLabel(app: app)
@@ -19,6 +20,7 @@ struct BreatherApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         MainActor.assumeIsolated {
+            AssetRenderer.handleCommandLine()
             if CommandLine.arguments.contains("--diagnose") {
                 Diagnostics.printAndExit()
             }

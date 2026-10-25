@@ -17,6 +17,15 @@ enum Format {
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
+    /// "58s", "12 min", "1 hr 5 min" — for tight headlines.
+    static func compact(_ seconds: TimeInterval) -> String {
+        let s = max(0, Int(seconds.rounded(.up)))
+        if s < 60 { return "\(s)s" }
+        let m = Int((Double(s) / 60).rounded(.up))
+        if m < 60 { return "\(m) min" }
+        return m % 60 == 0 ? "\(m / 60) hr" : "\(m / 60) hr \(m % 60) min"
+    }
+
     /// "20 seconds", "5 minutes".
     static func spoken(_ seconds: TimeInterval) -> String {
         let f = DateComponentsFormatter()
@@ -73,13 +82,9 @@ struct IslandButton: View {
 
     private var background: Color {
         switch style {
-        case .primary: .mint
+        case .primary: Brand.mint
         case .normal: .white.opacity(0.14)
         case .subtle: .white.opacity(0.06)
         }
     }
-}
-
-extension Color {
-    static let breatherMint = Color(red: 0.42, green: 0.93, blue: 0.75)
 }
