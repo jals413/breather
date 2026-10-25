@@ -56,33 +56,31 @@ struct MenuBarView: View {
             }
             .brandCard(padding: 14)
 
-            // Icon-only, like the notch. Names show as tooltips; durations live in the tiles' menus.
+            // Icon-only, like the notch. Names show as tooltips.
             HStack(spacing: 8) {
                 ActionTile("Break now", symbol: "eye.fill") { app.breakNow() }
                     .disabled(engine.isOnBreak)
-                if isPaused {
-                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { app.resume() }
-                } else {
-                    TileMenu(title: "Pause", symbol: "pause.fill", tint: .white) {
-                        ForEach(PauseOption.all) { option in
-                            Button(option.title) { app.pause(option) }
-                        }
-                    }
-                }
+                ActionTile(isPaused ? "Resume" : "Pause", symbol: isPaused ? "play.fill" : "pause.fill",
+                           tint: .white, active: isPaused) { app.togglePause() }
                 ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                     engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
-                TileMenu(title: "Take a break for…", symbol: "cup.and.saucer.fill", tint: Brand.sky) {
-                    ForEach([1.0, 5, 10, 15], id: \.self) { minutes in
-                        Button("\(Int(minutes)) minutes") { app.customBreak(minutes: minutes) }
-                    }
-                    Divider()
-                    Button("Long break") { engine.startBreak(kind: .long) }
-                }
-                .disabled(engine.isOnBreak)
+                ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { engine.startBreak(kind: .long) }
+                    .disabled(engine.isOnBreak)
             }
             .actionTileTitles(false)
+
+            if !isPaused {
+                VStack(alignment: .leading, spacing: 7) {
+                    BrandSectionLabel("Pause for")
+                    HStack(spacing: 6) {
+                        ForEach(PauseOption.all.prefix(4)) { option in
+                            PillButton(option.shortTitle, style: .normal, stretch: true) { app.pause(option) }
+                        }
+                    }
+                }
+            }
 
             HStack(spacing: 6) {
                 PillButton("", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
@@ -106,26 +104,6 @@ struct MenuBarView: View {
     private var isPaused: Bool {
         if case .paused = app.engine.phase { return true }
         return false
-    }
-}
-
-/// A tile that opens a menu (pause durations, break lengths).
-private struct TileMenu<Items: View>: View {
-    var title: String
-    var symbol: String
-    var tint: Color
-    @ViewBuilder var items: Items
-
-    var body: some View {
-        Menu {
-            items
-        } label: {
-            ActionTile(title, symbol: symbol, tint: tint) {}.label
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .help(title)
     }
 }
 
