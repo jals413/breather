@@ -65,3 +65,17 @@ final class UpdateVersionTests: XCTestCase {
         XCTAssertFalse(UpdateCheckerShim.isNewer("0.8.9", than: "0.9.0"))
     }
 }
+
+final class UpdateChecksumTests: XCTestCase {
+    func testFindsChecksumInShasumOutput() {
+        let text = """
+        0d12b261768ff20eb62fcecde37ca85bdfa4d2cb8e78f8f5d6870d699509beb8  Breather-0.9.1.zip
+        aaaa  Breather-0.9.1.dmg
+        bbbb *Breather.zip
+        """
+        XCTAssertEqual(UpdateCheckerShim.checksum(for: "Breather-0.9.1.zip", in: text),
+                       "0d12b261768ff20eb62fcecde37ca85bdfa4d2cb8e78f8f5d6870d699509beb8")
+        XCTAssertEqual(UpdateCheckerShim.checksum(for: "Breather.zip", in: text), "bbbb")
+        XCTAssertNil(UpdateCheckerShim.checksum(for: "Breather-0.9.2.zip", in: text))
+    }
+}

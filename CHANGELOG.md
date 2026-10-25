@@ -2,6 +2,18 @@
 
 All notable changes to Breather. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Updates
+- "Update Now" in Settings › About and in the notch downloads the new version, checks its SHA-256 checksum and signature, swaps it in and reopens Breather.
+
+### Welcome
+- The setup now uses the same sidebar and cards as Settings, and asks when you count as away.
+
+### Break screen
+- Five distinct themes: Ocean Calm, Forest, Sunset Glow, Midnight Minimal and Paper.
+- Wallpapers and photos load in the background. A wallpaper in Downloads or Desktop no longer freezes the window behind macOS's folder-access prompt or leaves it hidden afterwards.
+
 ## [0.9.1] - 2026-10-25
 
 ### Welcome

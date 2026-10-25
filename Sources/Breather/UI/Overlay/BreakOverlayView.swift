@@ -324,37 +324,72 @@ struct VisualEffectBlur: NSViewRepresentable {
 }
 
 /// Loads, downsizes and (optionally) blurs background photos once, then caches them.
+///
+/// Loading happens off the main thread: a wallpaper or photo in Downloads, Desktop or Documents makes macOS
+/// ask for folder access, and a read on the main thread would freeze the window behind that prompt.
+/// Views show the aurora until the image is ready, then redraw.
 @MainActor
-enum BackgroundImages {
-    private static var cache: [String: NSImage] = [:]
-    static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "webp", "gif"]
+@Observable
+final class BackgroundImages {
+    static let shared = BackgroundImages()
+    nonisolated static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "webp", "gif"]
+
+    private var images: [String: NSImage] = [:]
+    @ObservationIgnored private var loading: Set<String> = []
 
     static func wallpaper(for screen: NSScreen) -> NSImage? {
         guard let url = NSWorkspace.shared.desktopImageURL(for: screen) else { return nil }
-        return load(url, blur: 28)
+        return shared.image(key: "\(url.path)#28") { render(url, blur: 28) }
     }
 
     static func image(at path: String?, seed: Date, blur: Double) -> NSImage? {
         guard let path else { return nil }
-        let url = URL(fileURLWithPath: path)
-        var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir) else { return nil }
-        if !isDir.boolValue { return load(url, blur: blur) }
-        let files = ((try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)) ?? [])
-            .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.path < $1.path }
-        guard !files.isEmpty else { return nil }
-        let index = Int(seed.timeIntervalSinceReferenceDate / 60) % files.count
-        return load(files[index], blur: blur)
+        // Folders rotate once a minute; the key changes with the pick.
+        let minute = Int(seed.timeIntervalSinceReferenceDate / 60)
+        return shared.image(key: "\(path)#\(minute)#\(Int(blur))") {
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir) else { return nil }
+            let url = URL(fileURLWithPath: path)
+            if !isDir.boolValue { return render(url, blur: blur) }
+            let files = ((try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)) ?? [])
+                .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
+                .sorted { $0.path < $1.path }
+            guard !files.isEmpty else { return nil }
+            return render(files[minute % files.count], blur: blur)
+        }
     }
 
-    private static func load(_ url: URL, blur: Double) -> NSImage? {
-        let key = "\(url.path)#\(Int(blur))"
-        if let cached = cache[key] { return cached }
+    private func image(key: String, load: @escaping @Sendable () -> CGImage?) -> NSImage? {
+        if let cached = images[key] { return cached }
+        guard !loading.contains(key) else { return nil }
+        loading.insert(key)
+        let started = Date()
+        Task.detached(priority: .userInitiated) {
+            let cg = load()
+            await MainActor.run {
+                self.loading.remove(key)
+                if let cg {
+                    if self.images.count > 12 { self.images.removeAll() }
+                    self.images[key] = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+                }
+                // A slow load means macOS showed a folder-access prompt, which pulls focus away from
+                // a menu bar app. Bring our window back instead of leaving it hidden behind other apps.
+                if Date().timeIntervalSince(started) > 1 { Self.refocus() }
+            }
+        }
+        return nil
+    }
+
+    private static func refocus() {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }) else { return }
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    nonisolated private static func render(_ url: URL, blur: Double) -> CGImage? {
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
               let input = CIImage(contentsOf: url) else { return nil }
-
         let scale = min(1, 2560 / input.extent.width)
         var image = input.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         let extent = image.extent
@@ -362,10 +397,6 @@ enum BackgroundImages {
             // Clamp first so the blur doesn't fade to transparent at the edges.
             image = image.clampedToExtent().applyingGaussianBlur(sigma: blur).cropped(to: extent)
         }
-        guard let cg = CIContext().createCGImage(image, from: extent) else { return nil }
-        let result = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
-        if cache.count > 12 { cache.removeAll() }
-        cache[key] = result
-        return result
+        return CIContext().createCGImage(image, from: extent)
     }
 }

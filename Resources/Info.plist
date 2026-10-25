@@ -2,52 +2,52 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>Breather</string>
-    <key>CFBundleDisplayName</key>
-    <string>Breather</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.jalthakor.breather</string>
-    <key>CFBundleExecutable</key>
-    <string>Breather</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>26.0</string>
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLName</key>
-            <string>Breather commands</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>breather</string>
-            </array>
-        </dict>
-    </array>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Breather reads the address of your browser's front tab to show which websites you spend time on. This is optional and stays on your Mac.</string>
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Breather uses Bluetooth to tell your paired iPhone and Apple Watch when a break starts.</string>
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>Breather talks to your paired iPhone on your local network so breaks show up there instantly.</string>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_breather._tcp</string>
-    </array>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-    <key>LSApplicationCategoryType</key>
-    <string>public.app-category.healthcare-fitness</string>
+	<key>CFBundleDisplayName</key>
+	<string>Breather</string>
+	<key>CFBundleExecutable</key>
+	<string>Breather</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.jalthakor.breather</string>
+	<key>CFBundleName</key>
+	<string>Breather</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.9.1</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Breather commands</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>breather</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.healthcare-fitness</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Breather reads the address of your browser's front tab to show which websites you spend time on. This is optional and stays on your Mac.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Breather uses Bluetooth to tell your paired iPhone and Apple Watch when a break starts.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_breather._tcp</string>
+	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Breather talks to your paired iPhone on your local network so breaks show up there instantly.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
 </dict>
 </plist>

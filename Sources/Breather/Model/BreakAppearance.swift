@@ -168,38 +168,34 @@ struct BreakTheme: Identifiable {
     let id: String
     let appearance: BreakAppearance
 
+    /// Five looks that each feel different: animated aurora, bold digits, warm gradient, black minimal, light paper.
     static let all: [BreakTheme] = [
         BreakTheme(id: "Ocean Calm", appearance: .default),
-        BreakTheme(id: "Sunset", appearance: {
-            var a = BreakAppearance(); a.auroraPalette = .sunset; a.timerWeight = .light; return a
-        }()),
         BreakTheme(id: "Forest", appearance: {
-            var a = BreakAppearance(); a.auroraPalette = .forest; a.timerStyle = .digits; a.timerWeight = .ultraLight
-            a.messageDesign = .serif; a.messageWeight = .regular; return a
+            var a = BreakAppearance(); a.auroraPalette = .forest
+            let green = RGBA(0.55, 0.97, 0.65)
+            a.timerStyle = .digits; a.timerDesign = .rounded; a.timerWeight = .bold; a.timerScale = 1.3; a.accent = green
+            a.textColor = green; a.messageDesign = .rounded; a.messageWeight = .bold; a.messageScale = 1.3
+            a.showBreathingHalo = false; a.showBreathingCue = true; a.showClock = true; a.showHint = false
+            return a
         }()),
-        BreakTheme(id: "Lavender Breathe", appearance: {
-            var a = BreakAppearance(); a.auroraPalette = .lavender; a.showBreathingCue = true; a.accent = RGBA(0.85, 0.80, 1)
+        BreakTheme(id: "Sunset Glow", appearance: {
+            var a = BreakAppearance(); a.background = .gradient
+            a.gradientTop = RGBA(0.93, 0.47, 0.36); a.gradientBottom = RGBA(0.22, 0.07, 0.26)
+            a.timerStyle = .dots; a.timerWeight = .semibold; a.accent = RGBA(1, 0.9, 0.78)
+            a.messageDesign = .serif; a.messageWeight = .medium; a.showBreathingCue = true
             return a
         }()),
         BreakTheme(id: "Midnight Minimal", appearance: {
             var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0.02, 0.02, 0.03)
             a.timerStyle = .digits; a.timerDesign = .standard; a.timerWeight = .ultraLight; a.timerScale = 1.4
-            a.showBreathingHalo = false; a.showKindLabel = false; return a
+            a.showBreathingHalo = false; a.showKindLabel = false; a.showHint = false; return a
         }()),
         BreakTheme(id: "Paper", appearance: {
             var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0.96, 0.94, 0.89)
             a.textColor = RGBA(0.16, 0.14, 0.12); a.accent = RGBA(0.16, 0.14, 0.12)
             a.timerStyle = .bar; a.timerDesign = .serif; a.timerWeight = .light
             a.messageDesign = .serif; a.messageWeight = .regular; a.showBreathingHalo = false; return a
-        }()),
-        BreakTheme(id: "Terminal", appearance: {
-            var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0, 0, 0)
-            a.textColor = RGBA(0.45, 1, 0.6); a.accent = RGBA(0.45, 1, 0.6)
-            a.timerStyle = .dots; a.timerDesign = .mono; a.timerWeight = .regular
-            a.messageDesign = .mono; a.messageWeight = .regular; a.showBreathingHalo = false; return a
-        }()),
-        BreakTheme(id: "Your Wallpaper", appearance: {
-            var a = BreakAppearance(); a.background = .wallpaper; a.dimming = 0.4; return a
         }()),
     ]
 }

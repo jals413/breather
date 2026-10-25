@@ -775,19 +775,24 @@ private struct AboutPane: View {
             Section {
                 Toggle("Check for updates automatically", isOn: $store.settings.checkForUpdates)
                 HStack {
+                    if app.updates.isBusy { ProgressView().controlSize(.small) }
                     Text(updateText)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    if case .available(_, let page) = app.updates.status {
-                        Button("Get It") { NSWorkspace.shared.open(page) }
+                    if let release = app.updates.available {
+                        Button("What's New") { NSWorkspace.shared.open(release.page) }
+                        Button("Update Now") { Task { await app.updates.install() } }
+                            .buttonStyle(.borderedProminent)
+                    } else {
+                        Button("Check Now") { Task { await app.updates.check() } }
+                            .disabled(app.updates.isBusy)
                     }
-                    Button("Check Now") { Task { await app.updates.check() } }
-                        .disabled(app.updates.status == .checking)
                 }
+                .animation(.snappy, value: app.updates.status)
             } header: {
                 Text("Updates")
             } footer: {
-                Text("Once a day Breather asks GitHub for the latest version. That's its only internet connection; nothing about you is sent. Installed with Homebrew? `brew upgrade --cask breather` works too.")
+                Text("Once a day Breather asks GitHub for the latest version. That's its only internet connection; nothing about you is sent. Update Now downloads the new version, checks its SHA-256 checksum and signature, and reopens Breather.")
             }
 
             Section {
@@ -813,8 +818,11 @@ private struct AboutPane: View {
         case .idle: "Not checked yet"
         case .checking: "Checking…"
         case .upToDate: "Breather is up to date"
-        case .available(let version, _): "Breather \(version) is available"
+        case .available(let release): "Breather \(release.version) is available"
+        case .downloading(let version): "Downloading Breather \(version)…"
+        case .installing(let version): "Installing Breather \(version)…"
         case .failed: "Couldn't reach GitHub"
+        case .installFailed(_, let message): message
         }
     }
 }

@@ -104,8 +104,8 @@ final class AppModel {
         LoginItem.sync(enabled: store.settings.launchAtLogin)
         updates.onNewVersion = { [weak self] version, page in
             self?.notch.show(NotchToast(symbol: "arrow.down.circle.fill", tint: Brand.mint, title: "Breather \(version) is available",
-                                        subtitle: "Update with Homebrew, or get it from GitHub.", action: .openURL(page),
-                                        actionTitle: "Get it"), for: 12)
+                                        subtitle: "Installs in a few seconds, then Breather reopens.", action: .installUpdate,
+                                        actionTitle: "Update", secondaryAction: .openURL(page), secondaryTitle: "What's new"), for: 12)
         }
         phone.onCommand = { [weak self] command in self?.handle(command) }
         phone.statsProvider = { [weak self] in
@@ -536,6 +536,7 @@ final class AppModel {
         case .skipPlanned: break
         case .breakNow: breakNow()
         case .openURL(let url): NSWorkspace.shared.open(url)
+        case .installUpdate: Task { await updates.install() }
         case .reminderLater(let id):
             let minutes = store.settings.reminders.first { $0.id == id }?.laterMinutes ?? 10
             routines.snooze(id, minutes: minutes, settings: store.settings)

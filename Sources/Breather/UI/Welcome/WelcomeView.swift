@@ -1,73 +1,107 @@
 import AppKit
 import SwiftUI
 
-/// First-run setup. Every choice is a real setting, applied as you go, so most people never need Settings.
+/// First-run setup, in the same sidebar-and-cards layout as Settings and Stats.
+/// Every choice is a real setting, applied as you go, so most people never need Settings.
 struct WelcomeView: View {
     let app: AppModel
     var onDone: () -> Void
     @State var step: Step = .hello
 
-    enum Step: Int, CaseIterable {
-        case hello, rhythm, breaks, look, finish
+    enum Step: Int, CaseIterable, SidebarItem {
+        case hello, rhythm, breaks, look, notch, done
+
+        var id: Int { rawValue }
+        var title: String {
+            switch self {
+            case .hello: "Welcome"
+            case .rhythm: "Your Rhythm"
+            case .breaks: "Staying in Flow"
+            case .look: "Break Screen"
+            case .notch: "Notch & Menu Bar"
+            case .done: "All Set"
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .hello: "hand.wave.fill"
+            case .rhythm: "timer"
+            case .breaks: "brain.head.profile.fill"
+            case .look: "paintbrush.fill"
+            case .notch: "rectangle.topthird.inset.filled"
+            case .done: "checkmark"
+            }
+        }
+        var tint: Color {
+            switch self {
+            case .hello: Brand.teal
+            case .rhythm: .red
+            case .breaks: .indigo
+            case .look: .pink
+            case .notch: .black
+            case .done: .green
+            }
+        }
+        var summary: String {
+            switch self {
+            case .hello: Brand.tagline
+            case .rhythm: "How long you work between breaks, and how long each break lasts."
+            case .breaks: "How strict breaks are, and when Breather should wait for you."
+            case .look: "What your screen shows during a break. Tweak every detail later in Settings."
+            case .notch: "Where Breather shows up, and whether it opens when you log in."
+            case .done: "Breather now runs in your menu bar and notch. Your first break is on its way."
+            }
+        }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Group {
-                switch step {
-                case .hello: HelloStep()
-                case .rhythm: RhythmStep(app: app)
-                case .breaks: BreaksStep(app: app)
-                case .look: LookStep(app: app)
-                case .finish: FinishStep(app: app)
+        SidebarWindow(selection: $step, groups: [SidebarGroup(title: "Set Up", items: Step.allCases)]) {
+            VStack(spacing: 0) {
+                Group {
+                    switch step {
+                    case .hello: HelloPane()
+                    case .rhythm: RhythmPane(app: app)
+                    case .breaks: BreaksPane(app: app)
+                    case .look: LookPane(app: app)
+                    case .notch: NotchPane(app: app)
+                    case .done: DonePane(app: app)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .id(step)
+                footer
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: 24)),
-                                    removal: .opacity.combined(with: .offset(x: -24))))
-            .id(step)
-
-            footer
         }
-        .frame(width: 620, height: 720)
-        .animation(.smooth(duration: 0.35), value: step)
+        .frame(width: 820, height: 640)
     }
 
     private var footer: some View {
-        HStack {
-            Button("Back") { move(-1) }
-                .controlSize(.large)
-                .opacity(step == .hello ? 0 : 1)
-                .disabled(step == .hello)
-
+        HStack(spacing: 10) {
+            Text("Step \(step.rawValue + 1) of \(Step.allCases.count)")
+                .font(.callout).foregroundStyle(.secondary)
             Spacer()
-            HStack(spacing: 7) {
-                ForEach(Step.allCases, id: \.self) { s in
-                    Capsule()
-                        .fill(s == step ? Brand.teal : Color.secondary.opacity(0.3))
-                        .frame(width: s == step ? 18 : 7, height: 7)
-                }
+            if step != .hello {
+                Button("Back") { move(-1) }.controlSize(.large)
             }
-            Spacer()
-
             Button {
-                if step == .finish { onDone() } else { move(1) }
+                if step == .done { onDone() } else { move(1) }
             } label: {
-                Text(primaryTitle).frame(minWidth: 110)
+                Text(primaryTitle).frame(minWidth: 96)
             }
             .buttonStyle(.glassProminent)
             .tint(Brand.teal)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
         }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 30)
+        .padding(.top, 10)
+        .padding(.bottom, 18)
     }
 
     private var primaryTitle: String {
         switch step {
         case .hello: "Set Up"
-        case .finish: "Start Breathing"
+        case .done: "Start Breathing"
         default: "Continue"
         }
     }
@@ -77,71 +111,70 @@ struct WelcomeView: View {
     }
 }
 
-// MARK: - Steps
-
-private struct HelloStep: View {
+private struct StepHeader: View {
+    var step: WelcomeView.Step
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 10) {
-                BreatherAppIcon().frame(width: 104, height: 104)
-                Text("Welcome to \(Brand.name)").font(.system(size: 30, weight: .bold))
-                Text(Brand.tagline).font(.title3).foregroundStyle(.secondary)
-            }
-            .padding(.top, 52)
+        HeaderCard(symbol: step.symbol, tint: step.tint, title: step.title, summary: step.summary)
+    }
+}
 
-            VStack(alignment: .leading, spacing: 22) {
+// MARK: - Panes
+
+private struct HelloPane: View {
+    var body: some View {
+        Form {
+            Section {
+                VStack(spacing: 8) {
+                    BreatherAppIcon().frame(width: 72, height: 72)
+                    Text("Welcome to \(Brand.name)").font(.title2.bold())
+                    Text(Brand.tagline).font(.callout).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
+            Section {
                 Feature(symbol: "rectangle.topthird.inset.filled", tint: Brand.teal, title: "Lives in your notch",
                         detail: "A heads-up grows out of the notch before each break. Hover the notch to peek at your next one.")
                 Feature(symbol: "brain.head.profile.fill", tint: .indigo, title: "Knows when not to interrupt",
                         detail: "Breaks wait while you're in a call, watching a video, presenting, or mid-sentence.")
                 Feature(symbol: "figure.walk", tint: Brand.mint, title: "Counts real rest",
-                        detail: "Step away from your Mac and that time counts as a break, so you won't be asked again right after.")
+                        detail: "Step away from your Mac and that time counts as a break.")
                 Feature(symbol: "lock.shield.fill", tint: .gray, title: "Private by design",
                         detail: "No account and no tracking. Everything stays on this Mac.")
+            } footer: {
+                Text("Takes about a minute. You can change anything later in Settings.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 64)
-            .padding(.top, 40)
-
-            Spacer()
-            Text("Takes about a minute. You can change anything later in Settings.")
-                .font(.callout).foregroundStyle(.secondary)
-                .padding(.bottom, 4)
         }
     }
 }
 
-private struct RhythmStep: View {
+private struct RhythmPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
-        VStack(spacing: 0) {
-            StepHeader(symbol: "timer", tint: Brand.teal, title: "Pick your rhythm",
-                       detail: "How long you work between breaks, and how long each break lasts.")
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                ForEach(TimingPreset.all) { preset in
-                    PresetCard(preset: preset, selected: matches(preset)) { apply(preset) }
-                }
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 4)
-
-            Form {
-                Section {
-                    LabeledSlider(title: "Work for", value: $store.settings.workMinutes, range: 5...90, step: 5) { "\(Int($0)) min" }
-                    LabeledSlider(title: "Break for", value: $store.settings.breakSeconds, range: 10...300, step: 5) { duration($0) }
-                }
-                Section {
-                    Toggle("Long breaks", isOn: $store.settings.longBreakEnabled)
-                    if store.settings.longBreakEnabled {
-                        Stepper("After every \(store.settings.longBreakEvery) breaks", value: $store.settings.longBreakEvery, in: 2...8)
-                        LabeledSlider(title: "Long break length", value: $store.settings.longBreakMinutes, range: 1...20, step: 1) { "\(Int($0)) min" }
+        Form {
+            StepHeader(step: .rhythm)
+            Section("Presets") {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(TimingPreset.all) { preset in
+                        PresetCard(preset: preset, selected: matches(preset)) { apply(preset) }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .padding(.horizontal, 20)
+            Section {
+                LabeledSlider(title: "Work for", value: $store.settings.workMinutes, range: 5...90, step: 5) { "\(Int($0)) min" }
+                LabeledSlider(title: "Break for", value: $store.settings.breakSeconds, range: 10...300, step: 5) { duration($0) }
+            }
+            Section {
+                Toggle("Long breaks", isOn: $store.settings.longBreakEnabled)
+                if store.settings.longBreakEnabled {
+                    Stepper("After every \(store.settings.longBreakEvery) breaks", value: $store.settings.longBreakEvery, in: 2...8)
+                    LabeledSlider(title: "Long break length", value: $store.settings.longBreakMinutes, range: 1...20, step: 1) { "\(Int($0)) min" }
+                }
+            }
         }
     }
 
@@ -158,149 +191,132 @@ private struct RhythmStep: View {
     }
 
     private func duration(_ seconds: Double) -> String {
-        seconds < 60 ? "\(Int(seconds)) sec" : seconds.truncatingRemainder(dividingBy: 60) == 0
-            ? "\(Int(seconds / 60)) min" : "\(Int(seconds / 60)) min \(Int(seconds.truncatingRemainder(dividingBy: 60))) sec"
+        let s = Int(seconds)
+        if s < 60 { return "\(s) sec" }
+        return s % 60 == 0 ? "\(s / 60) min" : "\(s / 60) min \(s % 60) sec"
     }
 }
 
-private struct BreaksStep: View {
+private struct BreaksPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
-        VStack(spacing: 0) {
-            StepHeader(symbol: "brain.head.profile.fill", tint: .indigo, title: "How breaks behave",
-                       detail: "How strict breaks are, and when Breather should hold off.")
-            Form {
-                Section {
-                    Picker("Skipping", selection: $store.settings.difficulty) {
-                        ForEach(SkipDifficulty.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    Text(store.settings.difficulty.detail).font(.callout).foregroundStyle(.secondary)
+        Form {
+            StepHeader(step: .breaks)
+            Section {
+                Picker("Skipping", selection: $store.settings.difficulty) {
+                    ForEach(SkipDifficulty.allCases) { Text($0.title).tag($0) }
                 }
-                Section {
-                    Toggle("Heads-up in the notch a minute before", isOn: $store.settings.headsUpEnabled)
-                    Toggle("Wait until I stop typing", isOn: $store.settings.waitForTypingPause)
-                    Toggle("Count time away from the Mac as a break", isOn: $store.settings.idleCountsAsBreak)
-                }
-                Section("Hold breaks while") {
-                    Toggle("I'm in a call or meeting", isOn: $store.settings.pauseForMeetings)
-                    Picker("A video is playing", selection: $store.settings.videoMode) {
-                        ForEach(VideoPauseMode.allCases) { Text($0.title).tag($0) }
-                    }
-                    Toggle("I'm sharing or recording my screen", isOn: $store.settings.pauseForScreenRecording)
-                    Toggle("A game is full screen", isOn: $store.settings.pauseForFullscreenGames)
-                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text(store.settings.difficulty.detail).font(.callout).foregroundStyle(.secondary)
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .padding(.horizontal, 20)
+            Section {
+                Toggle("Heads-up in the notch a minute before", isOn: $store.settings.headsUpEnabled)
+                Toggle("Wait until I stop typing", isOn: $store.settings.waitForTypingPause)
+                Toggle("Count time away from the Mac as a break", isOn: $store.settings.idleCountsAsBreak)
+                LabeledSlider(title: "I'm away after no input for", value: $store.settings.idleThresholdSeconds,
+                              range: 60...600, step: 30) { s in s.truncatingRemainder(dividingBy: 60) == 0 ? "\(Int(s / 60)) min" : String(format: "%.1f min", s / 60) }
+            }
+            Section("Hold breaks while") {
+                Toggle("I'm in a call or meeting", isOn: $store.settings.pauseForMeetings)
+                Picker("A video is playing", selection: $store.settings.videoMode) {
+                    ForEach(VideoPauseMode.allCases) { Text($0.title).tag($0) }
+                }
+                Toggle("I'm sharing or recording my screen", isOn: $store.settings.pauseForScreenRecording)
+                Toggle("A game is full screen", isOn: $store.settings.pauseForFullscreenGames)
+            }
         }
     }
 }
 
-private struct LookStep: View {
+private struct LookPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
-        VStack(spacing: 0) {
-            StepHeader(symbol: nil, tint: .pink, title: "Make it yours",
-                       detail: "This is what your screen shows during a break.")
-            LivePreview(appearance: store.settings.appearance)
-                .frame(height: 200)
-                .padding(.horizontal, 40)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(BreakTheme.all) { theme in
-                        ThemeCard(theme: theme, selected: store.settings.appearance == theme.appearance) {
-                            withAnimation(.snappy) { store.settings.appearance = theme.appearance }
+        Form {
+            StepHeader(step: .look)
+            Section {
+                LivePreview(appearance: store.settings.appearance)
+                    .frame(height: 230)
+                    .frame(maxWidth: .infinity)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+            }
+            Section("Themes") {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(BreakTheme.all) { theme in
+                            ThemeCard(theme: theme, selected: store.settings.appearance == theme.appearance) {
+                                withAnimation(.snappy) { store.settings.appearance = theme.appearance }
+                            }
                         }
                     }
-                }
-                .padding(.horizontal, 40)
-                .padding(.vertical, 6)
-            }
-            .padding(.top, 10)
-
-            Form {
-                Section {
-                    Picker("Timer", selection: $store.settings.appearance.timerStyle) {
-                        ForEach(TimerStyle.allCases) { Text($0.title).tag($0) }
-                    }
-                    Toggle("Breathe in and out guide", isOn: $store.settings.appearance.showBreathingCue)
-                    Toggle("Show the time", isOn: $store.settings.appearance.showClock)
-                    Toggle("Play a sound when a break starts and ends", isOn: $store.settings.soundEnabled)
+                    .padding(.vertical, 4)
                 }
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .padding(.horizontal, 20)
+            Section {
+                Picker("Timer", selection: $store.settings.appearance.timerStyle) {
+                    ForEach(TimerStyle.allCases) { Text($0.title).tag($0) }
+                }
+                Toggle("Breathe in and out guide", isOn: $store.settings.appearance.showBreathingCue)
+                Toggle("Show the time", isOn: $store.settings.appearance.showClock)
+                Toggle("Play a sound when a break starts and ends", isOn: $store.settings.soundEnabled)
+            }
         }
     }
 }
 
-private struct FinishStep: View {
+private struct NotchPane: View {
     let app: AppModel
 
     var body: some View {
         @Bindable var store = app.store
-        VStack(spacing: 0) {
-            StepHeader(symbol: "checkmark.seal.fill", tint: Brand.mint, title: "Almost done",
-                       detail: "A few last choices about where Breather shows up.")
-            Form {
-                Section {
-                    Toggle("Open Breather when I log in", isOn: $store.settings.launchAtLogin)
-                }
-                Section("Around the notch") {
-                    Toggle("Countdown beside the notch before a break", isOn: $store.settings.notchLiveActivity)
-                    Toggle("Expand when I hover the notch", isOn: $store.settings.notchHoverExpands)
-                    Toggle("Time left in the menu bar", isOn: $store.settings.menuBarShowsTime)
-                }
-                Section {
-                    Toggle("Track which apps I use (stays on this Mac)", isOn: $store.settings.trackAppUsage)
-                    Toggle("Check GitHub for new versions", isOn: $store.settings.checkForUpdates)
-                } footer: {
-                    Text("Pair your iPhone and Apple Watch any time from Settings › Devices.")
-                        .font(.callout).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 6)
+        Form {
+            StepHeader(step: .notch)
+            Section {
+                Toggle("Open Breather when I log in", isOn: $store.settings.launchAtLogin)
+            }
+            Section("Notch") {
+                Toggle("Countdown beside the notch before a break", isOn: $store.settings.notchLiveActivity)
+                Toggle("Expand when I hover the notch", isOn: $store.settings.notchHoverExpands)
+                Picker("Show alerts on", selection: $store.settings.alertDisplay) {
+                    ForEach(AlertDisplay.allCases) { Text($0.title).tag($0) }
                 }
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .padding(.horizontal, 20)
+            Section("Menu bar") {
+                Toggle("Show Breather in the menu bar", isOn: $store.settings.showMenuBarIcon)
+                Toggle("Time left in the menu bar", isOn: $store.settings.menuBarShowsTime)
+            }
+        }
+    }
+}
+
+private struct DonePane: View {
+    let app: AppModel
+
+    var body: some View {
+        @Bindable var store = app.store
+        Form {
+            StepHeader(step: .done)
+            Section("Stats & updates") {
+                Toggle("Track which apps I use (stays on this Mac)", isOn: $store.settings.trackAppUsage)
+                Toggle("Check for new versions", isOn: $store.settings.checkForUpdates)
+            }
+            Section {
+                Feature(symbol: "cursorarrow.click.2", tint: Brand.teal, title: "Click the menu bar icon",
+                        detail: "Take a break now, pause, switch profiles, or open Settings.")
+                Feature(symbol: "rectangle.topthird.inset.filled", tint: .gray, title: "Hover the notch",
+                        detail: "See how long until your next break.")
+                Feature(symbol: "iphone.gen3", tint: Brand.ocean, title: "Add your iPhone and Apple Watch",
+                        detail: "Pair them any time from Settings › iPhone & Apple Watch.")
+            }
         }
     }
 }
 
 // MARK: - Pieces
-
-private struct StepHeader: View {
-    var symbol: String?
-    var tint: Color
-    var title: String
-    var detail: String
-
-    var body: some View {
-        VStack(spacing: 8) {
-            if let symbol {
-                Image(systemName: symbol)
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundStyle(tint)
-                    .frame(width: 60, height: 60)
-                    .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            }
-            Text(title).font(.system(size: 24, weight: .bold))
-            Text(detail).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-        .padding(.top, symbol == nil ? 36 : 40)
-        .padding(.bottom, 18)
-        .padding(.horizontal, 40)
-    }
-}
 
 private struct PresetCard: View {
     var preset: TimingPreset
@@ -310,20 +326,20 @@ private struct PresetCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(preset.id).font(.headline)
                 Text("\(Int(preset.workMinutes)) min work · \(Int(preset.breakSeconds)) sec break")
                     .font(.callout).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(selected ? Brand.teal.opacity(0.18) : Color.primary.opacity(hovering ? 0.08 : 0.05))
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(selected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(hovering ? 0.08 : 0.04))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(selected ? Brand.teal : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 2)
             )
             .contentShape(Rectangle())
         }
@@ -340,16 +356,14 @@ private struct Feature: View {
     var detail: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: symbol)
-                .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(tint)
-                .frame(width: 36)
+        HStack(alignment: .top, spacing: 12) {
+            SettingsBadge(symbol: symbol, tint: tint, size: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline)
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(.vertical, 2)
     }
 }
 
@@ -372,7 +386,6 @@ final class WelcomeWindowController {
         window.styleMask = [.titled, .closable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.center()
         self.window = window

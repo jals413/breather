@@ -27,6 +27,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Diagnostics.printAndExit()
             }
             AppModel.shared.start()
+            // Developer flag: update straight away (used to test the updater end to end).
+            if CommandLine.arguments.contains("--update-now") {
+                Task { await AppModel.shared.updates.install() }
+            }
         }
     }
 
