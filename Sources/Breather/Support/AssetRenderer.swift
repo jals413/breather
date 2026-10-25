@@ -12,6 +12,23 @@ enum AssetRenderer {
             renderIconSet(to: URL(fileURLWithPath: args[i + 1]))
             exit(0)
         }
+        if let i = args.firstIndex(of: "--render-mobile-icon"), i + 1 < args.count {
+            // iOS / watchOS want a full-bleed, opaque square; the system applies its own mask.
+            let view = ZStack {
+                LinearGradient(colors: [Color(red: 0.44, green: 0.92, blue: 0.78), Color(red: 0.10, green: 0.62, blue: 0.66),
+                                        Color(red: 0.04, green: 0.30, blue: 0.48)], startPoint: .top, endPoint: .bottom)
+                RadialGradient(colors: [.white.opacity(0.3), .white.opacity(0)], center: .top, startRadius: 0, endRadius: 760)
+                BreatherMark(color: .white).frame(width: 600, height: 600)
+            }
+            .frame(width: 1024, height: 1024)
+            let renderer = ImageRenderer(content: view)
+            renderer.isOpaque = true
+            if let cg = renderer.cgImage {
+                try? NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: args[i + 1]))
+            }
+            exit(0)
+        }
         if let i = args.firstIndex(of: "--render-snapshots"), i + 1 < args.count {
             renderSnapshots(to: URL(fileURLWithPath: args[i + 1]))
             exit(0)

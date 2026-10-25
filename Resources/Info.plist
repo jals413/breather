@@ -33,6 +33,14 @@
     </array>
     <key>NSAppleEventsUsageDescription</key>
     <string>Breather reads the address of your browser's front tab to show which websites you spend time on. This is optional and stays on your Mac.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Breather uses Bluetooth to tell your paired iPhone and Apple Watch when a break starts.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Breather talks to your paired iPhone on your local network so breaks show up there instantly.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_breather._tcp</string>
+    </array>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

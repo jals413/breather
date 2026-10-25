@@ -1,60 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Breather's visual identity. Everything brand-coloured in the app reads from here,
-/// so a future rename/re-theme is a one-file change.
-enum Brand {
-    static let name = "Breather"
-    static let tagline = "Rest your eyes. Keep your flow."
-
-    /// Core palette: a calm mint that warms into ocean blue.
-    static let mint = Color(red: 0.40, green: 0.91, blue: 0.76)        // #66E8C2
-    static let teal = Color(red: 0.13, green: 0.71, blue: 0.69)        // #21B5B0
-    static let ocean = Color(red: 0.05, green: 0.38, blue: 0.55)       // #0D618C
-    static let night = Color(red: 0.03, green: 0.07, blue: 0.13)       // #081221
-    static let amber = Color(red: 1.0, green: 0.72, blue: 0.33)        // heads-up / "soon"
-    static let sky = Color(red: 0.45, green: 0.78, blue: 1.0)          // on hold / smart pause
-
-    static let gradient = LinearGradient(colors: [mint, teal, ocean], startPoint: .topLeading, endPoint: .bottomTrailing)
-}
-
-extension Color {
-    static let breatherMint = Brand.mint
-}
-
-/// The Breather mark: an eyelid over a rising "sun" pupil that sits on the horizon, with a
-/// breath ripple below — looking far away, and breathing out. Drawn in a unit square.
-struct BreatherMark: View {
-    var color: Color = .white
-    var rippleOpacity: Double = 0.7
-
-    var body: some View {
-        Canvas { ctx, size in
-            let w = min(size.width, size.height)
-            let ox = (size.width - w) / 2, oy = (size.height - w) / 2
-            func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: ox + x * w, y: oy + y * w) }
-            let stroke = StrokeStyle(lineWidth: w * 0.085, lineCap: .round, lineJoin: .round)
-
-            var lid = Path()
-            lid.move(to: pt(0.08, 0.50))
-            lid.addCurve(to: pt(0.92, 0.50), control1: pt(0.27, 0.10), control2: pt(0.73, 0.10))
-            ctx.stroke(lid, with: .color(color), style: stroke)
-
-            ctx.fill(Path(ellipseIn: CGRect(origin: pt(0.355, 0.335), size: CGSize(width: w * 0.29, height: w * 0.29))), with: .color(color))
-
-            var horizon = Path()
-            horizon.move(to: pt(0.12, 0.70))
-            horizon.addLine(to: pt(0.88, 0.70))
-            ctx.stroke(horizon, with: .color(color), style: stroke)
-
-            var ripple = Path()
-            ripple.move(to: pt(0.30, 0.86))
-            ripple.addLine(to: pt(0.70, 0.86))
-            ctx.stroke(ripple, with: .color(color.opacity(rippleOpacity)), style: StrokeStyle(lineWidth: w * 0.07, lineCap: .round))
-        }
-    }
-}
-
 /// The app icon artwork, drawn to Apple's macOS grid: an 824pt continuous-corner squircle
 /// centred in a 1024pt canvas.
 struct BreatherAppIcon: View {

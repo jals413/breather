@@ -158,6 +158,13 @@ struct Settings: Codable, Equatable {
     /// Reads the front tab's address in Safari & Chromium browsers (asks for Automation permission).
     var trackWebsites = false
 
+    // iPhone & Apple Watch
+    var phoneLinkEnabled = false
+    var phoneBlockDuringBreaks = true
+    var apnsTeamID = ""
+    var apnsKeyID = ""
+    var apnsKeyPath = ""
+
     // System
     var launchAtLogin = false
     var hotKeys = HotKeySettings()

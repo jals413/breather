@@ -1,4 +1,5 @@
 import AppKit
+import BreatherKit
 import SwiftUI
 import Observation
 
@@ -47,6 +48,7 @@ final class AppModel {
     let log = BreakLog()
     let notch = NotchModel()
     let usage = UsageTracker()
+    let phone = PhoneLink()
 
     @ObservationIgnored private let activity = ActivityMonitor()
     @ObservationIgnored private let smartPause = SmartPauseMonitor()
@@ -99,6 +101,8 @@ final class AppModel {
 
         registerHotKeys()
         LoginItem.sync(enabled: store.settings.launchAtLogin)
+        phone.onCommand = { [weak self] command in self?.handle(command) }
+        configurePhone(store.settings)
         baseProfileID = store.settings.activeProfileID
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
@@ -183,6 +187,56 @@ final class AppModel {
         }
     }
 
+    // MARK: iPhone & Watch
+
+    private func configurePhone(_ s: Settings) {
+        phone.setEnabled(s.phoneLinkEnabled)
+        phone.apns.config = APNsClient.Config(teamID: s.apnsTeamID, keyID: s.apnsKeyID, keyPath: s.apnsKeyPath)
+    }
+
+    /// The Mac's state as the phone and Watch see it.
+    func phoneState(now: Date = .now) -> MacState {
+        let s = store.settings
+        var state = MacState(mode: .working, detail: statusTitle, takenToday: log.takenToday, score: usage.score,
+                             workSeconds: s.workSeconds, profile: activeProfile?.name, macName: phone.macName,
+                             blockPhone: s.phoneBlockDuringBreaks)
+        switch engine.phase {
+        case .working:
+            state.nextBreakAt = now.addingTimeInterval(engine.timeUntilBreak)
+        case .holding, .smartPaused:
+            state.mode = .onHold
+            state.nextBreakAt = now.addingTimeInterval(engine.timeUntilBreak)
+        case .paused(let until):
+            state.mode = .paused
+            state.pausedUntil = until
+        case .away:
+            state.mode = .away
+        case .offHours:
+            state.mode = .offHours
+        case .onBreak(let session):
+            state.mode = .onBreak
+            state.breakStart = session.start
+            state.breakEnd = session.end
+            state.breakTitle = session.title ?? session.kind.title
+            state.breakMessage = session.message
+            state.isLongBreak = session.kind == .long
+        }
+        return state
+    }
+
+    private func handle(_ command: PhoneCommand) {
+        switch command {
+        case .breakNow: breakNow()
+        case .breakFor(let minutes): customBreak(minutes: minutes)
+        case .snooze(let minutes): snooze(minutes * 60)
+        case .skipNext: if !engine.skipNextPending { engine.toggleSkipNext() }
+        case .pause(let minutes): engine.pause(for: minutes.map { $0 * 60 })
+        case .resume: resume()
+        case .endBreak: skipOrEndBreak()
+        }
+        phone.publish(phoneState(), force: true)
+    }
+
     // MARK: URL scheme
 
     /// breather://break[?minutes=N], long-break, pause[?minutes=N], resume, skip-next,
@@ -234,6 +288,7 @@ final class AppModel {
             engine.absorbUpcomingBreak(false)
         }
         nudgeIfOvertime(now: now)
+        if store.settings.phoneLinkEnabled { phone.publish(phoneState(now: now)) }
         usage.tick(now: now, dt: dt, engine: engine, settings: settings)
 
         announceSmartPauseChanges(signals.pauseReasons)
@@ -380,6 +435,7 @@ final class AppModel {
 
     private func settingsChanged(old: Settings, new: Settings) {
         engine.settings = new
+        configurePhone(new)
         // Edits made while a profile is active are saved into that profile.
         if !applyingProfile, let id = new.activeProfileID, ProfileValues(from: old) != ProfileValues(from: new),
            let index = new.profiles.firstIndex(where: { $0.id == id }) {

@@ -1,0 +1,131 @@
+# iPhone + Apple Watch companion. Generate the Xcode project with:  xcodegen generate
+# The Mac app is built with SwiftPM (scripts/build.sh); both share the BreatherKit package.
+#
+# Configurations:
+#   Debug / Release            free Apple ID: Bluetooth + local network, Live Activity, Watch.
+#   DebugPaid / ReleasePaid    adds Apple push + Screen Time blocking (needs the paid program).
+name: BreatherMobile
+options:
+  bundleIdPrefix: com.jalthakor.breather
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+configs:
+  Debug: debug
+  Release: release
+  DebugPaid: debug
+  ReleasePaid: release
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+  configs:
+    DebugPaid:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "DEBUG BREATHER_PAID"
+    ReleasePaid:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "BREATHER_PAID"
+packages:
+  BreatherKit:
+    path: .
+
+targets:
+  BreatherPhone:
+    type: application
+    platform: iOS
+    sources: [Apps/iPhone, Apps/Shared]
+    dependencies:
+      - package: BreatherKit
+      - target: BreatherWidgets
+      - target: BreatherNotificationService
+      - target: BreatherWatch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jalthakor.breather.ios
+        PRODUCT_NAME: Breather
+        INFOPLIST_FILE: Apps/iPhone/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        DebugPaid:
+          CODE_SIGN_ENTITLEMENTS: Apps/iPhone/BreatherPhone-Paid.entitlements
+        ReleasePaid:
+          CODE_SIGN_ENTITLEMENTS: Apps/iPhone/BreatherPhone-Paid.entitlements
+
+  BreatherWidgets:
+    type: app-extension
+    platform: iOS
+    sources: [Apps/Widgets, Apps/Shared]
+    dependencies:
+      - package: BreatherKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jalthakor.breather.ios.widgets
+        INFOPLIST_FILE: Apps/Widgets/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  BreatherNotificationService:
+    type: app-extension
+    platform: iOS
+    sources: [Apps/NotificationService, Apps/Shared]
+    dependencies:
+      - package: BreatherKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jalthakor.breather.ios.notifications
+        INFOPLIST_FILE: Apps/NotificationService/Info.plist
+      configs:
+        DebugPaid:
+          CODE_SIGN_ENTITLEMENTS: Apps/NotificationService/NotificationService-Paid.entitlements
+        ReleasePaid:
+          CODE_SIGN_ENTITLEMENTS: Apps/NotificationService/NotificationService-Paid.entitlements
+
+  BreatherWatch:
+    type: application
+    platform: watchOS
+    sources: [Apps/Watch, Apps/Shared]
+    dependencies:
+      - package: BreatherKit
+      - target: BreatherWatchWidgets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jalthakor.breather.ios.watchkitapp
+        PRODUCT_NAME: Breather
+        INFOPLIST_FILE: Apps/Watch/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: Apps/Watch/BreatherWatch.entitlements
+
+  BreatherWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources: [Apps/WatchWidgets, Apps/Shared]
+    dependencies:
+      - package: BreatherKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jalthakor.breather.ios.watchkitapp.widgets
+        INFOPLIST_FILE: Apps/WatchWidgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Apps/Watch/BreatherWatch.entitlements
+
+schemes:
+  BreatherPhone:
+    build:
+      targets:
+        BreatherPhone: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  BreatherPhone (Paid):
+    build:
+      targets:
+        BreatherPhone: all
+    run:
+      config: DebugPaid
+    archive:
+      config: ReleasePaid

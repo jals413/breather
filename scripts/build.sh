@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Builds Breather.app into ./build and (optionally) installs it to /Applications.
 # Usage: scripts/build.sh [--install] [--run]
+# Paid developer-program features (Apple push to iPhone): BREATHER_PAID=1 scripts/build.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

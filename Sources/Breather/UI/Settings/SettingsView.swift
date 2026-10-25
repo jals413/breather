@@ -8,6 +8,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     case schedule, strictness, breakScreen, messages
     case smartPause, notch
     case reminders, privacy
+    case devices
     case profiles, automations, about
 
     var id: String { rawValue }
@@ -23,6 +24,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         Group(title: "Breaks", panes: [.schedule, .strictness, .breakScreen, .messages]),
         Group(title: "Staying in Flow", panes: [.smartPause, .notch]),
         Group(title: "Wellbeing", panes: [.reminders, .privacy]),
+        Group(title: "Devices", panes: [.devices]),
         Group(title: "Advanced", panes: [.profiles, .automations, .about]),
     ]
 
@@ -37,6 +39,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .notch: "Notch & Alerts"
         case .reminders: "Reminders"
         case .privacy: "Stats & Privacy"
+        case .devices: "iPhone & Apple Watch"
         case .profiles: "Profiles"
         case .automations: "Automations"
         case .about: "About"
@@ -54,6 +57,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .notch: "rectangle.topthird.inset.filled"
         case .reminders: "drop.fill"
         case .privacy: "chart.bar.xaxis"
+        case .devices: "iphone.gen3"
         case .profiles: "person.crop.square.filled.and.at.rectangle.fill"
         case .automations: "command"
         case .about: "info"
@@ -71,9 +75,10 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .notch: .black
         case .reminders: .cyan
         case .privacy: .green
+        case .devices: Brand.ocean
         case .profiles: .purple
         case .automations: .blue
-        case .about: Brand.ocean
+        case .about: .gray
         }
     }
 
@@ -88,6 +93,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .notch: "Breather lives in your notch. Decide what it shows and when."
         case .reminders: "Gentle nudges between breaks: water, posture, blinking, standing up."
         case .privacy: "See your screen habits. Everything is stored only on this Mac."
+        case .devices: "See breaks on your iPhone's Lock Screen and Dynamic Island, and feel them on your Apple Watch."
         case .profiles: "Switch between saved setups, by hand or automatically by app."
         case .automations: "Shortcuts and scripts when breaks start or end, keyboard shortcuts, and link commands."
         case .about: Brand.tagline
@@ -106,6 +112,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .notch: "notch island heads-up countdown pill display hover"
         case .reminders: "water posture blink stand stretch nudge"
         case .privacy: "stats score apps websites browser tracking"
+        case .devices: "iphone watch phone pair bluetooth live activity dynamic island lock screen block screen time push"
         case .profiles: "profile deep work everyday gentle switch"
         case .automations: "shortcut applescript shell script keyboard hotkey url breather://"
         case .about: "version"
@@ -199,6 +206,7 @@ struct SettingsView: View {
                 case .notch: NotchPane(app: app)
                 case .reminders: RemindersPane(app: app)
                 case .privacy: PrivacyPane(app: app)
+                case .devices: DevicesPane(app: app)
                 case .profiles: ProfilesPane(app: app)
                 case .automations: AutomationsPane(app: app)
                 case .about: AboutPane(app: app)

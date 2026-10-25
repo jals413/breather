@@ -106,6 +106,11 @@ extension Settings {
         read(\.activeProfileID, "activeProfileID")
         read(\.trackAppUsage, "trackAppUsage")
         read(\.trackWebsites, "trackWebsites")
+        read(\.phoneLinkEnabled, "phoneLinkEnabled")
+        read(\.phoneBlockDuringBreaks, "phoneBlockDuringBreaks")
+        read(\.apnsTeamID, "apnsTeamID")
+        read(\.apnsKeyID, "apnsKeyID")
+        read(\.apnsKeyPath, "apnsKeyPath")
         read(\.launchAtLogin, "launchAtLogin")
         read(\.hotKeys, "hotKeys")
         if let keys = try? container.decode(HotKeysCompat.self, forKey: AnyKey("hotKeys")) { keys.apply(to: &hotKeys) }

@@ -1,6 +1,27 @@
 # Breather for iPhone: plan
 
-**Status:** planned. Build and test it in the iOS Simulator now. Ship it behind a feature flag, and enable it once there's a paid Apple Developer Program account.
+**Status:** built. The iPhone app, Live Activity, notification extension, Apple Watch app and complications all exist. Paid-account features (Apple push, Screen Time blocking) are compiled behind the `BREATHER_PAID` flag and switch on with the Paid build configuration.
+
+## Run it
+
+| What | Command |
+|---|---|
+| Mac app (free) | `scripts/build.sh --install --run` |
+| Mac app (paid: Apple push) | `BREATHER_PAID=1 scripts/build.sh --install --run` |
+| iPhone + Watch in the Simulator | `scripts/mobile.sh sim` |
+| iPhone + Watch on your devices | `scripts/mobile.sh device <TEAM_ID>` (free Apple ID works; reinstall every 7 days) |
+| Paid configuration | `PAID=1 scripts/mobile.sh device <TEAM_ID>` |
+
+Then on the Mac: **Settings → iPhone & Apple Watch** → turn on → **Pair a New iPhone…** and type the code on the phone.
+
+## Free vs paid builds
+
+| | Free (Debug/Release) | Paid (DebugPaid/ReleasePaid) |
+|---|---|---|
+| Link | Bluetooth (background) + local network (app open / Simulator) | + Apple push from anywhere |
+| Lock Screen / Dynamic Island | Starts when you open the app; updates in the background over Bluetooth | Also starts by push, even with the phone asleep |
+| Apple Watch | App, complications, Smart Stack, haptic via notifications | Same |
+| Block apps during breaks | – | Screen Time shield (app + Notification Service Extension) |
 
 ## What it does
 
