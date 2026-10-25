@@ -257,6 +257,10 @@ final class AppModel {
                let p = store.settings.profiles.first(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) {
                 applyProfile(p.id)
             }
+        case "pair":
+            store.settings.phoneLinkEnabled = true
+            phone.startPairing()
+            openSettings()
         case "settings": openSettings()
         case "stats": openStats()
         default: break

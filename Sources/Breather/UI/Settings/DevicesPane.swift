@@ -1,5 +1,6 @@
 import AppKit
 import BreatherKit
+import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 struct DevicesPane: View {
@@ -91,8 +92,16 @@ private struct PairingRow: View {
     var body: some View {
         if let code = phone.pairingCode, let expires = phone.pairingExpires {
             VStack(spacing: 10) {
-                Text("Open Breather on your iPhone and enter this code")
+                Text("Scan with your iPhone camera, or type the code in Breather on your iPhone")
                     .font(.callout).foregroundStyle(.secondary)
+                if let url = phone.pairingURL, let qr = QRCode.image(for: url.absoluteString) {
+                    Image(nsImage: qr)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 150, height: 150)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(.white))
+                }
                 Text(code.map(String.init).joined(separator: " "))
                     .font(.system(size: 40, weight: .semibold, design: .rounded))
                     .monospacedDigit()
@@ -113,5 +122,16 @@ private struct PairingRow: View {
                     .disabled(phone.devices.count >= LinkConstants.maxPairedDevices)
             }
         }
+    }
+}
+
+enum QRCode {
+    static func image(for string: String) -> NSImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        guard let output = filter.outputImage?.transformed(by: CGAffineTransform(scaleX: 8, y: 8)),
+              let cg = CIContext().createCGImage(output, from: output.extent) else { return nil }
+        return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
     }
 }

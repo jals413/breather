@@ -80,11 +80,18 @@ final class PhoneLink {
     func startPairing() {
         pairingCode = String(format: "%06d", Int.random(in: 0...999_999))
         pairingExpires = .now.addingTimeInterval(120)
+        UserDefaults.standard.set(["code": pairingCode!, "expires": pairingExpires!.timeIntervalSince1970], forKey: "phone.pairing")
     }
 
     func cancelPairing() {
         pairingCode = nil
         pairingExpires = nil
+        UserDefaults.standard.removeObject(forKey: "phone.pairing")
+    }
+
+    /// Scanning this with the iPhone camera opens Breather and pairs, no typing.
+    var pairingURL: URL? {
+        pairingCode.flatMap { URL(string: "breather-phone://pair?code=\($0)") }
     }
 
     func forget(_ device: PairedDevice) {

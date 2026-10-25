@@ -12,6 +12,13 @@ struct BreatherPhoneApp: App {
         WindowGroup {
             RootView(model: model)
                 .tint(Brand.teal)
+                // breather-phone://pair?code=123456 — from the QR code on the Mac.
+                .onOpenURL { url in
+                    guard url.host() == "pair",
+                          let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                            .queryItems?.first(where: { $0.name == "code" })?.value else { return }
+                    model.pair(code: code)
+                }
         }
         .onChange(of: scenePhase) { _, phase in
             model.setActive(phase == .active)

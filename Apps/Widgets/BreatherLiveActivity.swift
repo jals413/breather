@@ -25,7 +25,7 @@ struct BreatherLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     Countdown(state: state)
                         .font(.system(size: 30, weight: .semibold, design: .rounded))
-                        .foregroundStyle(tint(state))
+                        .foregroundStyle(activityTint(state))
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
@@ -40,23 +40,23 @@ struct BreatherLiveActivity: Widget {
                     .padding(.horizontal, 8)
                 }
             } compactLeading: {
-                BreatherMark(color: tint(state), rippleOpacity: 0.6).frame(width: 18, height: 18)
+                BreatherMark(color: activityTint(state), rippleOpacity: 0.6).frame(width: 18, height: 18)
             } compactTrailing: {
                 Countdown(state: state)
                     .font(.system(.footnote, design: .rounded).weight(.semibold))
-                    .foregroundStyle(tint(state))
+                    .foregroundStyle(activityTint(state))
                     .frame(maxWidth: 44)
             } minimal: {
-                BreatherMark(color: tint(state), rippleOpacity: 0.6).frame(width: 16, height: 16)
+                BreatherMark(color: activityTint(state), rippleOpacity: 0.6).frame(width: 16, height: 16)
             }
-            .keylineTint(tint(state))
+            .keylineTint(activityTint(state))
         }
         // Mirrors to the Apple Watch Smart Stack (and CarPlay).
         .supplementalActivityFamilies([.small, .medium])
     }
 }
 
-private func tint(_ state: BreatherActivityAttributes.ContentState) -> Color {
+private func activityTint(_ state: BreatherActivityAttributes.ContentState) -> Color {
     switch state.mode {
     case .onBreak: Brand.mint
     case .working: .white
@@ -75,7 +75,7 @@ private struct LockScreenView: View {
         if family == .small {
             // Apple Watch Smart Stack.
             HStack(spacing: 8) {
-                BreatherMark(color: tint(state), rippleOpacity: 0.6).frame(width: 22, height: 22)
+                BreatherMark(color: activityTint(state), rippleOpacity: 0.6).frame(width: 22, height: 22)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(state.title).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     Countdown(state: state).font(.system(.title3, design: .rounded).weight(.semibold))
@@ -94,7 +94,7 @@ private struct LockScreenView: View {
                     Spacer(minLength: 8)
                     Countdown(state: state)
                         .font(.system(size: 34, weight: .semibold, design: .rounded))
-                        .foregroundStyle(tint(state))
+                        .foregroundStyle(activityTint(state))
                 }
                 ProgressBar(state: state)
             }
@@ -109,8 +109,8 @@ private struct Badge: View {
 
     var body: some View {
         ZStack {
-            Circle().fill(tint(state).opacity(0.2))
-            BreatherMark(color: tint(state), rippleOpacity: 0.6).frame(width: 24, height: 24)
+            Circle().fill(activityTint(state).opacity(0.2))
+            BreatherMark(color: activityTint(state), rippleOpacity: 0.6).frame(width: 24, height: 24)
         }
         .frame(width: 44, height: 44)
     }
@@ -141,7 +141,7 @@ private struct ProgressBar: View {
             } currentValueLabel: {
                 EmptyView()
             }
-            .tint(tint(state))
+            .tint(activityTint(state))
         }
     }
 }

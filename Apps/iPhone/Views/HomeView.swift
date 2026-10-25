@@ -77,7 +77,7 @@ struct HomeView: View {
                 Button("Unpair", role: .destructive) { model.unpair() }
             }
             #if BREATHER_PAID
-            .familyActivityPicker(isPresented: $pickingApps, selection: $model.blocker.selection)
+            .familyActivityPicker(isPresented: $pickingApps, selection: Bindable(model.blocker).selection)
             #endif
         }
     }
@@ -155,7 +155,7 @@ private struct ActionGrid: View {
 
     var body: some View {
         let mode = model.state?.mode
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
             if mode == .onBreak {
                 Tile(title: "+5 min", symbol: "clock.arrow.circlepath") { model.send(.snooze(minutes: 5)) }
                 Tile(title: "End break", symbol: "checkmark") { model.send(.endBreak) }

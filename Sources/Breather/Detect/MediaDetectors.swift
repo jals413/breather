@@ -6,11 +6,17 @@ import IOKit.pwr_mgt
 /// Which apps are capturing from a microphone right now (macOS 14.2+ process objects).
 /// Reading "is running input" needs no microphone permission.
 enum MicrophoneDetector {
+    /// System services that hold the mic for calls on behalf of an app (FaceTime, Phone).
+    private static let callServices: Set<String> = ["avconferenced", "callservicesd"]
+
+    /// Apps using the microphone. Background system processes (Siri / "Hey Siri" listening,
+    /// dictation, voice control) are ignored: only real apps, or call services, count as a call.
     static func appsUsingInput() -> [AppIdentity] {
         var result: [AppIdentity] = []
         for process in processObjects() where isRunningInput(process) {
-            guard let pid = pid(of: process), pid != getpid() else { continue }
-            if let app = AppIdentity.resolve(pid: pid) { result.append(app) }
+            guard let pid = pid(of: process), pid != getpid(), let app = AppIdentity.resolve(pid: pid) else { continue }
+            let isRegularApp = NSRunningApplication(processIdentifier: app.pid)?.activationPolicy == .regular
+            if isRegularApp || callServices.contains(app.name) { result.append(app) }
         }
         return result
     }
