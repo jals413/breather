@@ -4,3 +4,4 @@ build/
 *.xcodeproj/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 dist/
+.claude/

@@ -3,199 +3,251 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Breather — Break reminders that live in your notch</title>
-  <meta name="description" content="Free, open-source break reminders for macOS. A heads-up grows out of your MacBook's notch, breaks wait while you're in a call or mid-sentence, and nothing leaves your Mac.">
-  <meta property="og:title" content="Breather — Rest your eyes. Keep your flow.">
-  <meta property="og:description" content="Free, open-source break reminders that live in your MacBook's notch.">
-  <meta property="og:image" content="https://jals413.github.io/breather/assets/img/icon-1024.png">
+  <title>Breather: free break reminders that live in your MacBook's notch</title>
+  <meta name="description" content="Breather is a free, open-source Mac app that reminds you to rest your eyes. Heads-ups grow out of the notch, breaks wait while you're in a call or mid-sentence, and nothing leaves your Mac.">
+  <link rel="canonical" href="https://jals413.github.io/breather/">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Jal Thakor">
   <meta name="theme-color" content="#081221">
-  <link rel="icon" href="assets/img/favicon.png">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Share previews (Open Graph: Slack, Discord, LinkedIn, iMessage, Reddit, Hacker News) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Breather">
+  <meta property="og:title" content="Breather: free break reminders that live in your MacBook's notch">
+  <meta property="og:description" content="Breather is a free, open-source Mac app that reminds you to rest your eyes. Heads-ups grow out of the notch, breaks wait while you're in a call or mid-sentence, and nothing leaves your Mac.">
+  <meta property="og:url" content="https://jals413.github.io/breather/">
+  <meta property="og:image" content="https://jals413.github.io/breather/assets/img/social.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Breather: break reminders that grow out of your MacBook's notch. Free and open source.">
+  <meta property="og:locale" content="en_US">
+
+  <!-- X / Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Breather: free break reminders that live in your MacBook's notch">
+  <meta name="twitter:description" content="Breather is a free, open-source Mac app that reminds you to rest your eyes. Heads-ups grow out of the notch, breaks wait while you're in a call or mid-sentence, and nothing leaves your Mac.">
+  <meta name="twitter:image" content="https://jals413.github.io/breather/assets/img/social.png">
+  <meta name="twitter:image:alt" content="Breather: break reminders that grow out of your MacBook's notch. Free and open source.">
+
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
   <link rel="stylesheet" href="assets/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Breather",
+    "description": "Free, open-source break reminders for macOS that grow out of your MacBook's notch and wait for the right moment.",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "macOS 26 or later",
+    "url": "https://jals413.github.io/breather/",
+    "downloadUrl": "https://github.com/jals413/breather/releases/latest/download/Breather.dmg",
+    "softwareVersion": "0.9.0",
+    "image": "https://jals413.github.io/breather/assets/img/icon-512.png",
+    "screenshot": "https://jals413.github.io/breather/assets/img/social.png",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Jal Thakor", "url": "https://github.com/jals413" },
+    "codeRepository": "https://github.com/jals413/breather"
+  }
+  </script>
 </head>
-<body>
+<body class="home">
   <div class="aurora" aria-hidden="true"></div>
 
   <nav class="top">
     <div class="wrap">
       <a class="brand" href="#"><img src="assets/img/icon-256.png" alt="">Breather</a>
       <div class="links">
-        <a href="#features">Features</a>
-        <a href="#iphone">iPhone &amp; Watch</a>
-        <a href="install.html">Install guide</a>
-        <a href="https://github.com/jals413/breather">GitHub</a>
-        <a class="btn btn-primary btn-small cta" href="#install">Download</a>
+        <a href="https://github.com/jals413/breather" class="gh">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+        <a class="btn btn-primary btn-small" href="#get">Download</a>
       </div>
     </div>
   </nav>
 
+  <!-- Hero -->
   <header class="hero">
     <div class="wrap">
-      <img class="icon" src="assets/img/icon-256.png" alt="Breather icon">
-      <h1>Rest your eyes.<br><span>Keep your flow.</span></h1>
-      <p class="lead">Break reminders that live in your MacBook's notch. They wait while you're in a call, watching something or mid-sentence — and nothing ever leaves your Mac.</p>
-      <div class="actions">
-        <a class="btn btn-primary" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>
+      <a class="oss-pill reveal" href="https://github.com/jals413/breather">
+        <span class="dot"></span> Free &amp; open source <span class="sep">·</span> GPL-3.0 <span class="arrow">→</span>
+      </a>
+      <h1 class="reveal">Rest your eyes.<br><span>Keep your flow.</span></h1>
+      <p class="lead reveal">Gentle break reminders that grow out of your MacBook's notch and wait for the right moment. Your eyes rest. Your focus stays.</p>
+      <div class="actions reveal">
+        <a class="btn btn-primary btn-large" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>
           Download for Mac
         </a>
-        <a class="btn btn-glass" href="#install">Homebrew &amp; more</a>
+        <a class="btn btn-glass btn-large" href="https://github.com/jals413/breather">View on GitHub</a>
       </div>
-      <p class="meta">Free &amp; open source (GPL-3.0) · macOS 26 Tahoe or later · Apple silicon &amp; Intel</p>
+      <p class="meta reveal">Free · macOS 26 or later · Apple silicon and Intel</p>
+    </div>
 
-      <div class="stage" aria-label="Animated preview of Breather in the MacBook notch">
-        <div class="screen-top">
-          <div class="menubar">
-            <span>&#63743;<span class="menus">&nbsp;&nbsp; Xcode&nbsp;&nbsp; File&nbsp;&nbsp; Edit&nbsp;&nbsp; View</span></span>
-            <span class="right"><span class="eye" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></span><span>Wi‑Fi</span><span>9:41</span></span>
+    <!-- The desktop demo -->
+    <div class="demo-wrap reveal" aria-label="Animated demo: a break reminder grows out of the MacBook notch, then a full-screen break">
+      <div class="macbook">
+        <div class="screen" id="screen">
+          <div class="canvas" id="canvas">
+            <div class="wallpaper"></div>
+
+            <div class="menubar">
+              <div class="left"><b>&#63743;</b><b>Xcode</b><span>File</span><span>Edit</span><span>View</span><span>Window</span></div>
+              <div class="right">
+                <span class="mb-mark"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/></svg></span>
+                <span id="clock">9:41</span>
+              </div>
+            </div>
+
+            <div class="window">
+              <div class="titlebar"><i></i><i></i><i></i><span>Breather · NotchView.swift</span></div>
+              <div class="code-lines" id="code">
+                <div class="ln"><b class="k">struct</b> <b class="t">NotchView</b>: <b class="t">View</b> {</div>
+                <div class="ln">&nbsp;&nbsp;<b class="k">let</b> app: <b class="t">AppModel</b></div>
+                <div class="ln">&nbsp;</div>
+                <div class="ln">&nbsp;&nbsp;<b class="k">var</b> body: <b class="k">some</b> <b class="t">View</b> {</div>
+                <div class="ln">&nbsp;&nbsp;&nbsp;&nbsp;<b class="t">VStack</b>(spacing: <b class="n">0</b>) {</div>
+                <div class="ln">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;island</div>
+                <div class="ln">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.padding(.top, <b class="n">8</b>)</div>
+                <div class="ln typing"><span id="typed"></span><span class="caret"></span></div>
+              </div>
+            </div>
+
+            <!-- The island growing out of the notch -->
+            <div class="island" id="island" data-state="resting">
+              <div class="ears"><span class="ring"></span><span id="ears-time">1:00</span></div>
+              <div class="iz headsup">
+                <div class="row">
+                  <div class="badge amber"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></div>
+                  <div><div class="title">Eye break soon</div><div class="sub">20 seconds · waits for a pause</div></div>
+                  <div class="time amber-t" id="hu-time">0:58</div>
+                </div>
+                <div class="pills"><span class="pill primary">Start now</span><span class="pill">+1 min</span><span class="pill">+5 min</span><span class="pill subtle">Skip</span></div>
+              </div>
+              <div class="iz countdown">
+                <div class="row">
+                  <div class="badge amber"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></div>
+                  <div><div class="title">Look away</div><div class="sub">Short break</div></div>
+                  <div class="time amber-t" id="cd-time">3</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- The full-screen break -->
+            <div class="break" id="break">
+              <div class="break-aurora"></div>
+              <div class="break-content">
+                <div class="kind">SHORT BREAK</div>
+                <div class="ring-wrap">
+                  <div class="halo"></div>
+                  <svg viewBox="0 0 120 120" class="ring-svg"><circle cx="60" cy="60" r="52" class="track"/><circle cx="60" cy="60" r="52" class="prog" id="break-prog"/></svg>
+                  <div class="break-time" id="break-time">0:20</div>
+                </div>
+                <div class="breathe" id="breathe">Breathe in</div>
+                <div class="message">Look at something 20 feet away.</div>
+              </div>
+            </div>
           </div>
-          <div class="island" id="island" data-state="resting">
-            <div class="ears"><span style="color:var(--mint);display:flex"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></span><span id="ears-time">12:00</span></div>
-            <div class="row headsup">
-              <div class="badge" style="background:rgba(255,184,84,.2);color:var(--amber)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></div>
-              <div><div class="title">Eye break soon</div><div class="sub">20 seconds · waits for a pause</div></div>
-              <div class="time" style="color:var(--amber)" id="hu-time">0:58</div>
-            </div>
-            <div class="pills"><span class="pill primary">Start now</span><span class="pill">+1 min</span><span class="pill">+5 min</span><span class="pill subtle">Skip</span></div>
-            <div class="row countdown">
-              <div class="badge" style="background:rgba(255,184,84,.2);color:var(--amber)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12C6.5 2.4 17.5 2.4 22 12"/><circle cx="12" cy="11.5" r="3.4" fill="currentColor" stroke="none"/><path d="M2.9 16.8H21.1"/><path d="M7.2 20.6H16.8" opacity=".7"/></svg></div>
-              <div><div class="title">Look away</div><div class="sub">Short break</div></div>
-              <div class="time" style="color:var(--amber)" id="cd-time">5</div>
-            </div>
-            <div class="row toast">
-              <div class="badge" style="background:rgba(102,232,194,.18);color:var(--mint)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"/><path d="M13 7l-2 6 3 3 1 5M11 13l-3 7M10 9l-3 3M13 8l3 3 3 1"/></svg></div>
-              <div><div class="title">Welcome back</div><div class="sub">6 minutes away counted as a break</div></div>
-              <span class="pill" style="margin-left:auto">Undo</span>
-            </div>
-          </div>
+          <div class="notch" aria-hidden="true"></div>
         </div>
-        <p class="stage-caption" id="stage-caption">Quiet until a break is near.</p>
+        <div class="base"></div>
       </div>
+      <p class="demo-caption" id="caption">You're in the flow.</p>
     </div>
   </header>
 
-  <section id="features">
+  <!-- How it works -->
+  <section class="how">
     <div class="wrap">
-      <div class="eyebrow">Why Breather</div>
-      <h2>Breaks that know when not to interrupt.</h2>
-      <p class="section-lead">The 20-20-20 rule, done properly: every 20 minutes, look at something 20 feet away for 20 seconds — without losing your train of thought.</p>
-      <div class="grid">
-        <div class="card"><div class="ico t-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="6" rx="3"/><path d="M8 14h8M10 18h4"/></svg></div><h3>Lives in your notch</h3><p>A heads-up grows out of the notch before each break, Dynamic Island style. Hover the notch any time for your next break.</p></div>
-        <div class="card"><div class="ico t-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 0 1 16 0"/><path d="M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="16" r="2"/></svg></div><h3>Smart Pause</h3><p>Breaks wait during calls, videos, fullscreen games, screen recording and focus apps — and until you stop typing.</p></div>
-        <div class="card"><div class="ico t-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v6l-3 7M12 13l3 7M8 10h8"/></svg></div><h3>Time away counts</h3><p>Step away from your Mac and that time is a break. No more being told to rest right after you sat back down.</p></div>
-        <div class="card"><div class="ico t-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="3"/><path d="M3 14l5-4 4 3 3-2 6 4"/></svg></div><h3>Beautiful breaks</h3><p>Eight themes, animated aurora backgrounds, your own photos, five timer styles and a breathing guide.</p></div>
-        <div class="card"><div class="ico t-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M5 7l2 2M19 7l-2 2"/><path d="M12 21a6 6 0 0 0 6-6c0-4-6-8-6-8s-6 4-6 8a6 6 0 0 0 6 6z"/></svg></div><h3>Gentle reminders</h3><p>Water, posture, blinking, standing up — counted on real screen time, with Done and Later right in the notch.</p></div>
-        <div class="card"><div class="ico t-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Screen Score</h3><p>A daily score, screen time, your longest stretch, a seven-day view and top apps. All stored on your Mac.</p></div>
-        <div class="card"><div class="ico t-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11h4M19 9v4"/></svg></div><h3>Profiles</h3><p>Everyday, Deep Work, Gentle — or your own. Switch from the menu bar, or automatically when you open an app.</p></div>
-        <div class="card"><div class="ico t-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg></div><h3>Automations</h3><p>Run Shortcuts, AppleScript or shell scripts when breaks start and end. Control it all with <code>breather://</code> links.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="eyebrow">Break screen</div>
-      <h2>Make your breaks yours.</h2>
-      <p class="section-lead">Every display fades into the break you designed — over fullscreen apps too.</p>
-      <div class="themes">
-        <figure><img src="assets/img/theme-ocean-calm.jpg" alt="Ocean Calm theme" loading="lazy"><figcaption>Ocean Calm</figcaption></figure>
-        <figure><img src="assets/img/theme-lavender-breathe.jpg" alt="Lavender Breathe theme" loading="lazy"><figcaption>Lavender Breathe</figcaption></figure>
-        <figure><img src="assets/img/theme-sunset.jpg" alt="Sunset theme" loading="lazy"><figcaption>Sunset</figcaption></figure>
-        <figure><img src="assets/img/theme-forest.jpg" alt="Forest theme" loading="lazy"><figcaption>Forest</figcaption></figure>
-        <figure><img src="assets/img/theme-midnight-minimal.jpg" alt="Midnight Minimal theme" loading="lazy"><figcaption>Midnight Minimal</figcaption></figure>
-        <figure><img src="assets/img/theme-paper.jpg" alt="Paper theme" loading="lazy"><figcaption>Paper</figcaption></figure>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap split">
-      <div>
-        <div class="eyebrow">Menu bar &amp; notch</div>
-        <h2>Everything at a glance.</h2>
-        <p class="section-lead">Your next break, one tap to start, pause or skip, and your profiles — in the menu bar and in the notch. Hover the notch and it opens into a quick dashboard.</p>
-        <div class="island-shots">
-          <img src="assets/img/island-expanded.png" alt="Notch dashboard" loading="lazy">
-          <img src="assets/img/island-reminder.png" alt="Drink water reminder in the notch" loading="lazy">
+      <div class="center"><h2 class="reveal">Designed around how you work.</h2><p class="section-lead reveal">Most break apps interrupt you. Breather waits for you.</p></div>
+      <div class="how-grid">
+        <div class="how-item reveal">
+          <div class="num">01</div>
+          <h3>A heads-up, not an interruption.</h3>
+          <p>A minute before each break, a quiet card grows out of the notch. Start now, snooze, or skip.</p>
+        </div>
+        <div class="how-item reveal">
+          <div class="num">02</div>
+          <h3>It waits for the right moment.</h3>
+          <p>On a call, watching a video, presenting or mid-sentence? Your break waits until you're done.</p>
+        </div>
+        <div class="how-item reveal">
+          <div class="num">03</div>
+          <h3>Time away counts.</h3>
+          <p>Step away from your Mac and it counts as a break. No nagging the moment you sit back down.</p>
         </div>
       </div>
-      <div class="center"><img class="shot" src="assets/img/popover.png" alt="Breather menu bar popover" style="max-width:380px;margin:0 auto" loading="lazy"></div>
     </div>
   </section>
 
-  <section id="iphone">
+  <!-- Everything else, at a glance -->
+  <section class="features">
+    <div class="wrap">
+      <div class="center"><h2 class="reveal">Everything you need. Nothing you don't.</h2></div>
+      <div class="feature-list">
+        <div class="feature reveal"><span class="f-ico mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h3>Your rhythm</h3><p>20-20-20 by default, long breaks, office hours and planned breaks like lunch.</p></div></div>
+        <div class="feature reveal"><span class="f-ico sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg></span><div><h3>Gentle reminders</h3><p>Drink water, fix your posture, blink, stand up. Counted on real screen time.</p></div></div>
+        <div class="feature reveal"><span class="f-ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="3"/><path d="M3 14l5-4 4 3 3-2 6 4"/></svg></span><div><h3>Beautiful breaks</h3><p>Full-screen and calm, on every display. Make them look exactly how you like.</p></div></div>
+        <div class="feature reveal"><span class="f-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><div><h3>Screen Score</h3><p>A daily score, screen time and your longest stretch. All stored on your Mac.</p></div></div>
+        <div class="feature reveal"><span class="f-ico mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11h4M19 9v4"/></svg></span><div><h3>Profiles</h3><p>Everyday, Deep Work, Gentle. Switch by hand or automatically by app.</p></div></div>
+        <div class="feature reveal"><span class="f-ico coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg></span><div><h3>Automations</h3><p>Run Shortcuts and scripts when breaks start and end. Keyboard shortcuts too.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Open source -->
+  <section class="oss">
+    <div class="wrap">
+      <div class="oss-card reveal">
+        <div class="oss-text">
+          <div class="eyebrow">Open source</div>
+          <h2>Free forever.<br>Open by design.</h2>
+          <p>Breather is free software under the GPL-3.0. Read every line, build it yourself, or help shape what comes next. No account. No tracking. No ads.</p>
+          <div class="actions-left">
+            <a class="btn btn-primary" href="https://github.com/jals413/breather">View on GitHub</a>
+            <a class="btn btn-glass" href="https://github.com/jals413/breather/blob/main/CONTRIBUTING.md">Contribute</a>
+          </div>
+        </div>
+        <ul class="oss-facts">
+          <li><b>0</b><span>trackers, ads or accounts</span></li>
+          <li><b>100%</b><span>of your data stays on your Mac</span></li>
+          <li><b>GPL-3.0</b><span>free software, built in the open</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Companion -->
+  <section class="companion">
+    <div class="wrap companion-grid">
+      <div class="companion-devices reveal">
+        <img class="phone" src="assets/img/phone-home.png" alt="Breather on iPhone" loading="lazy">
+        <img class="watch" src="assets/img/watch-home.png" alt="Breather on Apple Watch" loading="lazy">
+      </div>
+      <div class="reveal">
+        <div class="eyebrow">Companion apps</div>
+        <h2>Better with iPhone and Apple Watch.</h2>
+        <p class="section-lead">Pair your iPhone to see each break on the Lock Screen and in the Dynamic Island. Your Apple Watch taps your wrist when it's time to look away.</p>
+        <p class="note">The companion apps are in beta. <a href="https://github.com/jals413/breather#iphone--apple-watch">Build them from source</a> today.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Get it -->
+  <section class="get" id="get">
     <div class="wrap center">
-      <div class="eyebrow">iPhone &amp; Apple Watch</div>
-      <h2>Your break, on every screen you own.</h2>
-      <p class="section-lead">When your Mac takes a break, your iPhone shows it on the Lock Screen and in the Dynamic Island, and your Apple Watch taps your wrist. Switch profiles and see your stats from your phone.</p>
-      <div class="devices">
-        <div><img class="phone" src="assets/img/phone-home.png" alt="Breather on iPhone" loading="lazy"><div class="device-label">Home</div></div>
-        <div><img class="phone" src="assets/img/phone-break.png" alt="A break on iPhone" loading="lazy"><div class="device-label">During a break</div></div>
-        <div><img class="phone" src="assets/img/phone-stats.png" alt="Stats on iPhone" loading="lazy"><div class="device-label">Stats</div></div>
-        <div><img class="watch" src="assets/img/watch-home.png" alt="Breather on Apple Watch" loading="lazy"><div class="device-label">Apple Watch</div></div>
+      <img class="get-icon reveal" src="assets/img/icon-256.png" alt="">
+      <h2 class="reveal">Your eyes will thank you.</h2>
+      <p class="section-lead reveal">Free for macOS 26 and later. Apple silicon and Intel.</p>
+      <div class="actions reveal">
+        <a class="btn btn-primary btn-large" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Download for Mac</a>
       </div>
-      <p class="note" style="margin-top:28px">The iPhone and Watch apps aren't on the App Store yet — you can <a href="https://github.com/jals413/breather#iphone--apple-watch">build them yourself</a> with Xcode and a free Apple ID.</p>
-    </div>
-  </section>
-
-  <section id="install">
-    <div class="wrap">
-      <div class="eyebrow">Install</div>
-      <h2>Get Breather.</h2>
-      <p class="section-lead">Free and open source. Pick whichever you like — they all install the same app.</p>
-
-      <div class="install-tabs" role="tablist">
-        <button class="tab" role="tab" aria-selected="true" data-panel="brew">Homebrew</button>
-        <button class="tab" role="tab" aria-selected="false" data-panel="curl">One line</button>
-        <button class="tab" role="tab" aria-selected="false" data-panel="dmg">Download</button>
-        <button class="tab" role="tab" aria-selected="false" data-panel="source">From source</button>
-      </div>
-
-      <div class="panel active" id="brew">
-        <div class="code"><span class="prompt">$</span><code>brew install --cask jals413/tap/breather</code><button class="btn btn-glass btn-small copy">Copy</button></div>
-        <p class="note">Update later with <kbd>brew upgrade --cask breather</kbd>.</p>
-      </div>
-      <div class="panel" id="curl">
-        <div class="code"><span class="prompt">$</span><code>curl -fsSL https://jals413.github.io/breather/install.sh | bash</code><button class="btn btn-glass btn-small copy">Copy</button></div>
-        <p class="note">Downloads the latest release from GitHub, checks its SHA-256, installs it to Applications and opens it. <a href="install.sh">Read the script</a> first if you like.</p>
-      </div>
-      <div class="panel" id="dmg">
-        <a class="btn btn-primary" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Download Breather.dmg</a>
-        <p class="note">Open it and drag Breather to Applications. The first time you open it, macOS asks you to approve it — <a href="install.html">here's how (30 seconds)</a>.</p>
-      </div>
-      <div class="panel" id="source">
-        <div class="code"><span class="prompt">$</span><code>git clone https://github.com/jals413/breather.git &amp;&amp; cd breather &amp;&amp; scripts/build.sh --install --run</code><button class="btn btn-glass btn-small copy">Copy</button></div>
-        <p class="note">Needs Xcode 26 or later. See the <a href="https://github.com/jals413/breather#build-from-source">README</a> for the iPhone and Watch apps.</p>
-      </div>
-
-      <div class="card" style="margin-top:32px">
-        <h3 style="margin-top:0">“Breather can't be opened because Apple cannot verify it”</h3>
-        <p>Breather is free and open source, so it isn't notarized by Apple (that needs a paid developer account). macOS asks you to approve it once — Homebrew and the one-line installer handle this for you. If you downloaded the DMG, follow the <a href="install.html">install guide</a>: it takes about 30 seconds.</p>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="eyebrow">Privacy</div>
-      <h2>Nothing leaves your Mac.</h2>
-      <div class="grid">
-        <div class="card"><h3 style="margin-top:0">No account, no tracking</h3><p>No sign-up, no analytics, no ads. Breather's only internet request is a daily check for new versions on GitHub, and you can turn it off.</p></div>
-        <div class="card"><h3 style="margin-top:0">Your stats stay local</h3><p>Screen time and app usage are stored in your Library folder. Website stats are off unless you turn them on.</p></div>
-        <div class="card"><h3 style="margin-top:0">Open source</h3><p>Every line is on GitHub under the GPL-3.0, and every release is built publicly by GitHub Actions with published checksums.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap" style="max-width:820px">
-      <div class="eyebrow">FAQ</div>
-      <h2>Questions</h2>
-      <details><summary>Is Breather really free?</summary><p>Yes — free and open source under the GNU GPL v3.0. No trials, no subscriptions.</p></details>
-      <details><summary>Why does macOS warn me when I open it?</summary><p>Apple only “notarizes” apps from developers with a paid membership. Breather isn't notarized yet, so macOS asks you to confirm once. The <a href="install.html">install guide</a> shows exactly where to click; Homebrew and the one-line installer do it for you.</p></details>
-      <details><summary>Which Macs does it run on?</summary><p>Any Mac running macOS 26 Tahoe or later, including macOS 27 — Apple silicon and Intel. The notch features show as a floating pill on Macs and displays without a notch.</p></details>
-      <details><summary>Will it interrupt my video calls?</summary><p>No. Breather waits while any app is using your microphone or camera, while video is playing, while you're screen-recording, and until you pause typing.</p></details>
-      <details><summary>How do I update?</summary><p>Breather tells you in the notch when a new version is out. With Homebrew: <kbd>brew upgrade --cask breather</kbd>. Otherwise download the new DMG or run the one-line installer again.</p></details>
-      <details><summary>How do I uninstall it?</summary><p>Quit Breather from the menu bar and move it to the Bin. To remove its data too, delete <kbd>~/Library/Application Support/Breather</kbd>. With Homebrew: <kbd>brew uninstall --zap --cask breather</kbd>.</p></details>
+      <div class="code get-code reveal"><span class="prompt">$</span><code>brew install --cask jals413/tap/breather</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      <p class="note reveal">Opening it for the first time? macOS asks you to approve it once. <a href="install.html">Here's how.</a></p>
     </div>
   </section>
 
@@ -205,7 +257,6 @@
       <div class="links">
         <a href="https://github.com/jals413/breather">GitHub</a>
         <a href="https://github.com/jals413/breather/releases">Releases</a>
-        <a href="https://github.com/jals413/breather/blob/main/CHANGELOG.md">Changelog</a>
         <a href="install.html">Install guide</a>
       </div>
     </div>

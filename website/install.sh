@@ -25,7 +25,7 @@ curl -fsSL "$BASE/checksums.txt" -o "$tmp/checksums.txt" || die "Couldn't fetch 
 
 expected=$(awk '$2 == "Breather.zip" {print $1}' "$tmp/checksums.txt")
 actual=$(shasum -a 256 "$tmp/Breather.zip" | awk '{print $1}')
-[[ -n "$expected" && "$expected" == "$actual" ]] || die "Checksum mismatch — not installing."
+[[ -n "$expected" && "$expected" == "$actual" ]] || die "Checksum mismatch, so not installing."
 say "Checksum verified."
 
 dest="/Applications"
@@ -38,4 +38,4 @@ xattr -dr com.apple.quarantine "$dest/Breather.app" 2>/dev/null || true
 
 say "Installed to $dest/Breather.app"
 open "$dest/Breather.app"
-say "Breather is running — look for it in your menu bar and notch."
+say "Breather is running. Look for it in your menu bar and notch."

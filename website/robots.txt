@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jals413.github.io/breather/sitemap.xml

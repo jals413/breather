@@ -37,6 +37,11 @@ enum AssetRenderer {
             renderWindow(StatsView(app: AppModel.shared), to: URL(fileURLWithPath: args[i + 1]))
             return
         }
+        if let i = args.firstIndex(of: "--render-social"), i + 1 < args.count {
+            AppModel.shared.prepareForSnapshots()
+            write(SocialCard(app: AppModel.shared).frame(width: 1200, height: 630), scale: 1, to: URL(fileURLWithPath: args[i + 1]))
+            exit(0)
+        }
         if let i = args.firstIndex(of: "--render-snapshots"), i + 1 < args.count {
             renderSnapshots(to: URL(fileURLWithPath: args[i + 1]))
             exit(0)
@@ -149,7 +154,7 @@ private struct SnapshotIsland: View {
         .clipShape(shape)
         .overlay(alignment: .top) {
             // The hardware notch, outlined so the review shows where the camera sits.
-            if !CommandLine.arguments.contains("--transparent") {
+            if !CommandLine.arguments.contains("--transparent") && !CommandLine.arguments.contains("--render-social") {
                 RoundedRectangle(cornerRadius: 8).stroke(.red.opacity(0.5), lineWidth: 0.5)
                     .frame(width: notch.width, height: notch.height)
             }
@@ -188,5 +193,52 @@ private struct SnapshotContent: View {
             }
             .frame(width: below.width, height: below.height, alignment: .top)
         }
+    }
+}
+
+/// The 1200×630 link preview used by the website and GitHub (Open Graph / X cards).
+private struct SocialCard: View {
+    let app: AppModel
+
+    var body: some View {
+        let notch = CGSize(width: 185, height: 32)
+        ZStack {
+            AuroraBackground(animated: false)
+            LinearGradient(colors: [.clear, Brand.night.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+            VStack(spacing: 0) {
+                SnapshotIsland(app: app, content: .headsUp(.short), notch: notch)
+                Spacer()
+            }
+            VStack(spacing: 18) {
+                Spacer().frame(height: 178)
+                HStack(spacing: 22) {
+                    BreatherAppIcon().frame(width: 128, height: 128)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Breather").font(.system(size: 76, weight: .bold, design: .default)).foregroundStyle(.white)
+                        Text("Rest your eyes. Keep your flow.")
+                            .font(.system(size: 34, weight: .semibold))
+                            .foregroundStyle(LinearGradient(colors: [Brand.mint, Brand.sky], startPoint: .leading, endPoint: .trailing))
+                    }
+                }
+                Text("Break reminders that live in your MacBook's notch.")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.75))
+                HStack(spacing: 10) {
+                    Circle().fill(Brand.mint).frame(width: 9, height: 9)
+                    Text("Free and open source").font(.system(size: 22, weight: .semibold))
+                    Text("·").foregroundStyle(.white.opacity(0.4))
+                    Text("macOS 26+").font(.system(size: 22, weight: .semibold))
+                }
+                .foregroundStyle(Brand.mint)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Capsule().fill(Brand.mint.opacity(0.12)))
+                .overlay(Capsule().strokeBorder(Brand.mint.opacity(0.35)))
+                .padding(.top, 6)
+                Spacer()
+            }
+        }
+        .frame(width: 1200, height: 630)
+        .clipped()
     }
 }
