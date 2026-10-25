@@ -2,6 +2,15 @@
 
 All notable changes to Breather. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] - 2026-10-25
+
+### Welcome
+- First launch is now a five-step setup: rhythm, how breaks behave, the break screen look, and the notch, menu bar and login options. Every choice is a real setting, saved as you go.
+
+### Website
+- Floating navigation, FAQ on the home page, and a full-screen break demo in the Forest look.
+- New share preview image.
+
 ## [0.9.0] — 2026-10-25
 
 First public release.
