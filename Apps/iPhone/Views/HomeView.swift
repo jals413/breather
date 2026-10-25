@@ -80,17 +80,14 @@ struct HomeView: View {
         if let list = model.state?.profiles, !list.isEmpty {
             VStack(spacing: 8) {
                 BrandSectionLabel("Profile")
-                ScrollView(.horizontal) {
-                    HStack(spacing: 10) {
-                        ForEach(list) { profile in
-                            ProfileCard(profile: profile, active: profile.id == model.state?.activeProfileID) {
-                                model.send(.setProfile(id: profile.id))
-                            }
+                // All profiles visible at once; more than three wrap onto another row.
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                    ForEach(list) { profile in
+                        ProfileCard(profile: profile, active: profile.id == model.state?.activeProfileID) {
+                            model.send(.setProfile(id: profile.id))
                         }
                     }
-                    .padding(.horizontal, 2)
                 }
-                .scrollIndicators(.hidden)
                 .disabled(!model.isConnected)
             }
         }
@@ -267,11 +264,10 @@ private struct ActionGrid: View {
             ActionTile(paused ? "Resume" : "Pause", symbol: paused ? "play.fill" : "pause.fill", tint: .white, active: paused) {
                 model.send(paused ? .resume : .pause(minutes: 60))
             }
-            ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+            ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
             ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { model.send(.longBreak) }
                 .disabled(onBreak)
         }
-        .actionTileTitles(false)
         .disabled(!model.isConnected)
     }
 }
@@ -282,11 +278,12 @@ private struct DeviceChip: View {
     var connected: Bool
 
     var body: some View {
+        // Mint when connected; red with a slash through the icon when not.
         HStack(spacing: 5) {
-            Image(systemName: symbol).font(.system(size: 12, weight: .semibold))
+            Image(systemName: connected ? symbol : symbol + ".slash").font(.system(size: 12, weight: .semibold))
             Circle().frame(width: 6, height: 6)
         }
-        .foregroundStyle(connected ? Brand.mint : BrandStyle.tertiaryText)
+        .foregroundStyle(connected ? Brand.mint : Brand.alert)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
         .background(Capsule().fill(BrandStyle.cardFill))
@@ -309,10 +306,10 @@ private struct ProfileCard: View {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.mint)
                     }
                 }
-                Text(profile.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                Text(profile.name).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
             }
-            .frame(width: 130, alignment: .leading)
-            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: BrandStyle.tileRadius, style: .continuous)
                     .fill(active ? Brand.mint.opacity(0.12) : BrandStyle.cardFill)

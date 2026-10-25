@@ -66,7 +66,7 @@ struct MenuBarView: View {
                         .disabled(engine.isOnBreak)
                     ActionTile(isPaused ? "Resume" : "Pause", symbol: isPaused ? "play.fill" : "pause.fill",
                                tint: .white, active: isPaused) { app.togglePause() }
-                    ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
+                    ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                         engine.toggleSkipNext()
                     }
                     .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
@@ -111,20 +111,21 @@ struct MenuBarView: View {
     private var footer: some View {
         let phone = app.phone
         let linked = app.store.settings.phoneLinkEnabled && !phone.devices.isEmpty
+        let phoneOK = phone.phoneConnected
+        let watchOK = phone.phoneConnected && phone.watchConnected
         return HStack(spacing: 6) {
-            PillButton("", symbol: "power", style: .subtle, hint: "Quit") { NSApp.terminate(nil) }
+            PillButton("", symbol: "power", style: .subtle) { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
             Spacer()
             if linked {
-                PillButton("", symbol: "iphone", style: .subtle,
-                           hint: phone.phoneConnected ? "iPhone connected" : "iPhone not connected",
-                           tint: phone.phoneConnected ? Brand.mint : BrandStyle.tertiaryText) { app.openSettings() }
-                PillButton("", symbol: "applewatch", style: .subtle,
-                           hint: phone.phoneConnected && phone.watchConnected ? "Apple Watch connected" : "Apple Watch not connected",
-                           tint: phone.phoneConnected && phone.watchConnected ? Brand.mint : BrandStyle.tertiaryText) { app.openSettings() }
+                // Mint when connected; red with a slash when not.
+                PillButton("", symbol: phoneOK ? "iphone" : "iphone.slash", style: .subtle,
+                           tint: phoneOK ? Brand.mint : Brand.alert) { app.openSettings() }
+                PillButton("", symbol: watchOK ? "applewatch" : "applewatch.slash", style: .subtle,
+                           tint: watchOK ? Brand.mint : Brand.alert) { app.openSettings() }
             }
-            PillButton("", symbol: "chart.bar.fill", style: .subtle, hint: "Stats") { app.openStats() }
-            PillButton("", symbol: "gearshape.fill", style: .subtle, hint: "Settings") { app.openSettings() }
+            PillButton("", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
+            PillButton("", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
                 .keyboardShortcut(",")
         }
     }

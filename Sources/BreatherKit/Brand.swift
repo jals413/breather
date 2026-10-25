@@ -12,7 +12,9 @@ public enum Brand {
     public static let ocean = Color(red: 0.05, green: 0.38, blue: 0.55)       // #0D618C
     public static let night = Color(red: 0.03, green: 0.07, blue: 0.13)       // #081221
     public static let amber = Color(red: 1.0, green: 0.72, blue: 0.33)        // heads-up / "soon"
-    public static let sky = Color(red: 0.45, green: 0.78, blue: 1.0)          // on hold / smart pause
+    public static let sky = Color(red: 0.45, green: 0.78, blue: 1.0)
+    /// Problems: not connected, failed.
+    public static let alert = Color(red: 1.0, green: 0.42, blue: 0.42)          // on hold / smart pause
 
     public static let gradient = LinearGradient(colors: [mint, teal, ocean], startPoint: .topLeading, endPoint: .bottomTrailing)
 }

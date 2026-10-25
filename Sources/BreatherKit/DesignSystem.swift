@@ -307,8 +307,10 @@ public struct PillButton: View {
             .padding(.vertical, 7)
             .frame(maxWidth: stretch ? .infinity : nil)
             .foregroundStyle(tint ?? (style == .primary ? Brand.night : .white.opacity(style == .subtle ? 0.62 : 0.95)))
-            .background(Capsule().fill(background.opacity(hovering ? 1 : 0.88)))
+            .background(Capsule().fill(hovering ? hoverBackground : background))
             .contentShape(Capsule())
+            .scaleEffect(hovering ? 1.04 : 1)
+            .animation(.easeOut(duration: 0.15), value: hovering)
         }
         .buttonStyle(.plain)
         #if os(macOS)
@@ -321,8 +323,16 @@ public struct PillButton: View {
     private var background: Color {
         switch style {
         case .primary: Brand.mint
-        case .normal: .white.opacity(0.14)
+        case .normal: .white.opacity(0.13)
         case .subtle: .white.opacity(0.07)
+        }
+    }
+
+    private var hoverBackground: Color {
+        switch style {
+        case .primary: Brand.mint.opacity(0.85)
+        case .normal: .white.opacity(0.24)
+        case .subtle: .white.opacity(0.16)
         }
     }
 }

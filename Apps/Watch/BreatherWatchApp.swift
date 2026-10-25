@@ -106,7 +106,7 @@ struct WatchHomeView: View {
             } else {
                 ActionTile("Pause", symbol: "pause.fill", tint: .white) { model.send(.pause(minutes: 60)) }
             }
-            ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
+            ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
             ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { model.send(.longBreak) }
                 .disabled(onBreak)
         }

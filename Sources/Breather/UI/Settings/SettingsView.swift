@@ -788,7 +788,7 @@ private struct AutomationsPane: View {
                 ShortcutRow(title: "Take a break now", key: $store.settings.hotKeys.breakNow)
                 ShortcutRow(title: "Take a break for \(Int(store.settings.customBreakMinutes)) min", key: $store.settings.hotKeys.customBreak)
                 ShortcutRow(title: "Pause / resume", key: $store.settings.hotKeys.togglePause)
-                ShortcutRow(title: "Skip next break", key: $store.settings.hotKeys.skipNext)
+                ShortcutRow(title: "Skip next", key: $store.settings.hotKeys.skipNext)
             } header: {
                 Text("Keyboard shortcuts")
             } footer: {

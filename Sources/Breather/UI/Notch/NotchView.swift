@@ -348,7 +348,7 @@ struct DashboardView: View {
                 } else {
                     ActionTile("Pause", symbol: "pause.fill", tint: .white) { app.togglePause() }
                 }
-                ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
+                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                     app.engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
