@@ -80,14 +80,15 @@ struct HomeView: View {
         if let list = model.state?.profiles, !list.isEmpty {
             VStack(spacing: 8) {
                 BrandSectionLabel("Profile")
-                // All profiles visible at once; more than three wrap onto another row.
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                // Left-aligned rows that wrap, so every profile is visible without scrolling.
+                FlowLayout(spacing: 10) {
                     ForEach(list) { profile in
                         ProfileCard(profile: profile, active: profile.id == model.state?.activeProfileID) {
                             model.send(.setProfile(id: profile.id))
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .disabled(!model.isConnected)
             }
         }
@@ -298,18 +299,16 @@ private struct ProfileCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    BrandBadge(color: active ? Brand.mint : .white.opacity(0.7), symbol: profile.symbol, size: 34)
-                    Spacer()
-                    if active {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.mint)
-                    }
+            HStack(spacing: 10) {
+                BrandBadge(color: active ? Brand.mint : .white.opacity(0.75), symbol: profile.symbol, size: 36)
+                Text(profile.name).font(.system(size: 15, weight: .semibold)).lineLimit(1).fixedSize()
+                if active {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.mint)
                 }
-                Text(profile.name).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
+            .padding(.leading, 10)
+            .padding(.trailing, 16)
+            .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: BrandStyle.tileRadius, style: .continuous)
                     .fill(active ? Brand.mint.opacity(0.12) : BrandStyle.cardFill)
@@ -341,5 +340,49 @@ private struct BrandToggle: View {
             }
         }
         .tint(Brand.mint)
+    }
+}
+
+/// Places views left to right, wrapping onto new rows when they run out of width.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(subviews, width: proposal.width ?? .infinity)
+        let height = rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(0, rows.count - 1))
+        let width = rows.map(\.width).max() ?? 0
+        return CGSize(width: proposal.width ?? width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private struct Row { var indices: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> [Row] {
+        var rows = [Row()]
+        for (i, view) in subviews.enumerated() {
+            let size = view.sizeThatFits(.unspecified)
+            let needed = rows[rows.count - 1].indices.isEmpty ? size.width : rows[rows.count - 1].width + spacing + size.width
+            if needed > width, !rows[rows.count - 1].indices.isEmpty {
+                rows.append(Row())
+            }
+            var row = rows[rows.count - 1]
+            row.width = row.indices.isEmpty ? size.width : row.width + spacing + size.width
+            row.height = max(row.height, size.height)
+            row.indices.append(i)
+            rows[rows.count - 1] = row
+        }
+        return rows
     }
 }

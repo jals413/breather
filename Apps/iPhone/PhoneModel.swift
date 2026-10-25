@@ -22,6 +22,8 @@ final class PhoneModel {
     private(set) var state: MacState? = SharedStore.state
     private(set) var stats: StatsSnapshot? = SharedStore.stats
     private(set) var watchConnected = false
+    /// Mac app icons for the Stats dashboard, cached on disk.
+    private(set) var appIcons: [String: UIImage] = AppIconCache.loadAll()
     enum AppTab: Hashable { case home, stats }
     var selectedTab: AppTab = .home
     private(set) var mac: PairedMac?
@@ -176,6 +178,11 @@ final class PhoneModel {
         case .stats(let snapshot):
             stats = snapshot
             SharedStore.stats = snapshot
+        case .appIcon(let id, let png):
+            if let image = UIImage(data: png) {
+                appIcons[id] = image
+                AppIconCache.save(png, id: id)
+            }
         default:
             break
         }
@@ -214,5 +221,24 @@ final class PhoneModel {
         content.interruptionLevel = started ? .timeSensitive : .active
         content.threadIdentifier = "breaks"
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "break", content: content, trigger: nil))
+    }
+}
+
+enum AppIconCache {
+    private static var dir: URL {
+        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("AppIcons")
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    static func save(_ png: Data, id: String) {
+        try? png.write(to: dir.appendingPathComponent(id + ".png"))
+    }
+
+    static func loadAll() -> [String: UIImage] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        return Dictionary(uniqueKeysWithValues: files.compactMap { url in
+            UIImage(contentsOfFile: url.path).map { (url.deletingPathExtension().lastPathComponent, $0) }
+        })
     }
 }

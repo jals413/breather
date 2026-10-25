@@ -37,6 +37,8 @@ final class PhoneLink {
     /// Supplies the stats dashboard data (sent on connect and every few minutes).
     @ObservationIgnored var statsProvider: (() -> StatsSnapshot)?
     @ObservationIgnored private var lastStatsAt = Date.distantPast
+    /// App icons already sent since the phone last said hello.
+    @ObservationIgnored private var sentIcons: Set<String> = []
     @ObservationIgnored private var secret: SymmetricKey?
     @ObservationIgnored private var lan: LANServer?
     @ObservationIgnored private var ble: BLEPeripheral?
@@ -144,6 +146,19 @@ final class PhoneLink {
         lastStatsAt = .now
         lan?.broadcast(data)
         ble?.broadcast(data)
+        sendIcons(for: stats) { [weak self] data in
+            self?.lan?.broadcast(data)
+            self?.ble?.broadcast(data)
+        }
+    }
+
+    private func sendIcons(for stats: StatsSnapshot, via send: (Data) -> Void) {
+        for app in stats.topApps where !sentIcons.contains(app.id) {
+            guard let png = AppIconRenderer.png(bundleID: app.id),
+                  let data = try? LinkEnvelope.seal(.appIcon(id: app.id, png: png), secret: secret) else { continue }
+            sentIcons.insert(app.id)
+            send(data)
+        }
     }
 
     // MARK: Messages in
@@ -158,7 +173,11 @@ final class PhoneLink {
             devices[index].lastSeen = .now
             saveDevices()
             if let state = lastSent, let data = try? LinkEnvelope.seal(.state(state), secret: secret) { reply(data) }
-            if let stats = statsProvider?(), let data = try? LinkEnvelope.seal(.stats(stats), secret: secret) { reply(data) }
+            if let stats = statsProvider?(), let data = try? LinkEnvelope.seal(.stats(stats), secret: secret) {
+                reply(data)
+                sentIcons.removeAll()
+                sendIcons(for: stats, via: reply)
+            }
         case .command(let command):
             onCommand?(command)
         case .tokens(let tokens):
@@ -169,7 +188,7 @@ final class PhoneLink {
             }
         case .deviceStatus(let watch):
             watchConnected = watch
-        case .state, .pairAccepted, .pairRejected, .stats:
+        case .state, .pairAccepted, .pairRejected, .stats, .appIcon:
             break
         }
     }
@@ -229,5 +248,22 @@ enum SecretFile {
 
     static func delete() {
         try? FileManager.default.removeItem(at: url)
+    }
+}
+
+/// Small PNG app icons for the phone's Stats dashboard.
+enum AppIconRenderer {
+    @MainActor
+    static func png(bundleID: String, size: CGFloat = 64) -> Data? {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsHigh: Int(size), bitsPerSample: 8,
+                                         samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                                         bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        icon.draw(in: NSRect(x: 0, y: 0, width: size, height: size))
+        NSGraphicsContext.restoreGraphicsState()
+        return rep.representation(using: .png, properties: [:])
     }
 }

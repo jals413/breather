@@ -270,7 +270,7 @@ final class AppModel {
         case "pair":
             store.settings.phoneLinkEnabled = true
             phone.startPairing()
-            openSettings()
+            openSettings(.devices)
         case "settings": openSettings()
         case "stats": openStats()
         default: break
@@ -535,8 +535,12 @@ final class AppModel {
         notch.dismissToast()
     }
 
-    func openSettings() {
+    /// The Settings page that's showing; set it to open Settings on a specific page.
+    var settingsPane: SettingsPane = .general
+
+    func openSettings(_ pane: SettingsPane? = nil) {
         notch.isHovering = false
+        if let pane { settingsPane = pane }
         settingsWindow.show(app: self)
     }
 

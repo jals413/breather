@@ -33,6 +33,10 @@ enum AssetRenderer {
             renderSettings(to: URL(fileURLWithPath: args[i + 1]))
             return
         }
+        if let i = args.firstIndex(of: "--render-stats"), i + 1 < args.count {
+            renderWindow(StatsView(app: AppModel.shared), to: URL(fileURLWithPath: args[i + 1]))
+            return
+        }
         if let i = args.firstIndex(of: "--render-snapshots"), i + 1 < args.count {
             renderSnapshots(to: URL(fileURLWithPath: args[i + 1]))
             exit(0)
@@ -41,7 +45,11 @@ enum AssetRenderer {
 
     /// Opens the real Settings window and captures it from its own view tree (no screen-recording permission).
     static func renderSettings(to url: URL) {
-        let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(app: AppModel.shared)))
+        renderWindow(SettingsView(app: AppModel.shared), to: url)
+    }
+
+    static func renderWindow(_ root: some View, to url: URL) {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: root))
         window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.setContentSize(NSSize(width: 760, height: 560))
@@ -98,7 +106,6 @@ enum AssetRenderer {
         write(BreatherAppIcon().frame(width: 512, height: 512), scale: 1, to: dir.appendingPathComponent("icon.png"))
         write(MenuBarView(app: app).background(Color(white: 0.16)), scale: 2, to: dir.appendingPathComponent("menubar-popover.png"))
         write(WelcomeView(app: app) {}.background(Color(white: 0.12)), scale: 1, to: dir.appendingPathComponent("welcome.png"))
-        write(StatsView(app: app, scrolls: false).frame(width: 820, height: 900).background(Color(white: 0.12)), scale: 1, to: dir.appendingPathComponent("stats.png"))
 
         if let screen = NSScreen.main {
             app.engine.startBreak(kind: .short, now: .now)

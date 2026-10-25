@@ -19,8 +19,8 @@ struct StatsDashboard: View {
                         ScoreTrend(stats: stats)
                         let apps = stats.topApps.filter { $0.seconds >= 60 }
                         let sites = stats.topSites.filter { $0.seconds >= 60 }
-                        if !apps.isEmpty { UsageCard(title: "Top apps", items: apps, tint: Brand.teal) }
-                        if !sites.isEmpty { UsageCard(title: "Top websites", items: sites, tint: Brand.sky) }
+                        if !apps.isEmpty { UsageCard(title: "Top apps", items: apps, tint: Brand.teal, icons: model.appIcons) }
+                        if !sites.isEmpty { UsageCard(title: "Top websites", items: sites, tint: Brand.sky, icons: [:]) }
                         explainer
                     } else {
                         empty
@@ -308,6 +308,7 @@ private struct UsageCard: View {
     let title: String
     let items: [StatsSnapshot.Usage]
     let tint: Color
+    let icons: [String: UIImage]
 
     var body: some View {
         let top = items.first?.seconds ?? 1
@@ -315,11 +316,16 @@ private struct UsageCard: View {
             Text(title).font(.headline)
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 HStack(spacing: 12) {
-                    Text(String(item.name.prefix(1)).uppercased())
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(tint)
-                        .frame(width: 32, height: 32)
-                        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(tint.opacity(0.16)))
+                    if let icon = icons[item.id] {
+                        // The real Mac app icon, sent over from the Mac.
+                        Image(uiImage: icon).resizable().interpolation(.high).frame(width: 34, height: 34)
+                    } else {
+                        Text(String(item.name.prefix(1)).uppercased())
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(tint)
+                            .frame(width: 32, height: 32)
+                            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(tint.opacity(0.16)))
+                    }
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             Text(item.name).font(.system(size: 14, weight: .medium)).lineLimit(1)

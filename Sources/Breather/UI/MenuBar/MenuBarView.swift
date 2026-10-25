@@ -118,11 +118,9 @@ struct MenuBarView: View {
                 .keyboardShortcut("q")
             Spacer()
             if linked {
-                // Mint when connected; red with a slash when not.
-                PillButton("", symbol: phoneOK ? "iphone" : "iphone.slash", style: .subtle,
-                           tint: phoneOK ? Brand.mint : Brand.alert) { app.openSettings() }
-                PillButton("", symbol: watchOK ? "applewatch" : "applewatch.slash", style: .subtle,
-                           tint: watchOK ? Brand.mint : Brand.alert) { app.openSettings() }
+                // Status only, not buttons: mint when connected, red with a slash when not.
+                DeviceStatusIcon(symbol: phoneOK ? "iphone" : "iphone.slash", connected: phoneOK)
+                DeviceStatusIcon(symbol: watchOK ? "applewatch" : "applewatch.slash", connected: watchOK)
             }
             PillButton("", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
             PillButton("", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
@@ -133,6 +131,22 @@ struct MenuBarView: View {
     private var isPaused: Bool {
         if case .paused = app.engine.phase { return true }
         return false
+    }
+}
+
+/// A connection indicator shaped like the footer buttons, but not clickable.
+private struct DeviceStatusIcon: View {
+    var symbol: String
+    var connected: Bool
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(connected ? Brand.mint : Brand.alert)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(.white.opacity(0.07)))
+            .accessibilityLabel(connected ? "Connected" : "Not connected")
     }
 }
 
@@ -179,7 +193,7 @@ private struct ProfilePicker: View {
             Divider().overlay(BrandStyle.cardStroke).padding(.vertical, 3)
             PickerRow(symbol: "pencil", title: "Edit Profiles…", checked: false) {
                 close()
-                app.openSettings()
+                app.openSettings(.profiles)
             }
         }
         .padding(5)

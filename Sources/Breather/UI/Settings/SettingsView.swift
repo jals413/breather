@@ -145,46 +145,23 @@ struct SettingsBadge: View {
 /// The large header at the top of each pane, like System Settings.
 struct PaneHeader: View {
     var pane: SettingsPane
-
     var body: some View {
-        Section {
-            VStack(spacing: 8) {
-                SettingsBadge(symbol: pane.symbol, tint: pane.tint, size: 52)
-                Text(pane.title).font(.title2.bold())
-                Text(pane.summary)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
+        HeaderCard(symbol: pane.symbol, tint: pane.tint, title: pane.title, summary: pane.summary)
     }
 }
 
+extension SettingsPane: SidebarItem {}
+
 struct SettingsView: View {
     let app: AppModel
-    @State private var pane: SettingsPane = .general
     @State private var query = ""
 
     var body: some View {
-        HStack(spacing: 0) {
-            SettingsSidebar(pane: $pane, query: $query)
-                .frame(width: 228)
-                .padding(.leading, 10)
-                .padding(.top, 34)      // clears the window's traffic lights
-                .padding(.bottom, 10)
-            detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .ignoresSafeArea(.container, edges: .top)
-        .frame(minWidth: 780, minHeight: 560)
-    }
-
-    @ViewBuilder
-    private var detail: some View {
-        Group {
-            switch pane {
+        @Bindable var app = app
+        SidebarWindow(selection: $app.settingsPane,
+                      groups: SettingsPane.groups.map { SidebarGroup(title: $0.title, items: $0.panes) },
+                      query: $query, matches: { $0.matches($1) }) {
+            switch app.settingsPane {
             case .general: GeneralPane(app: app)
             case .schedule: SchedulePane(app: app)
             case .strictness: StrictnessPane(app: app)
@@ -200,93 +177,6 @@ struct SettingsView: View {
             case .about: AboutPane(app: app)
             }
         }
-        .formStyle(.grouped)
-        .padding(.top, 22)
-    }
-}
-
-/// Our own sidebar, drawn as a card with exactly the same corner radius and fill as the
-/// grouped settings cards (12pt). The system sidebar uses a different radius.
-private struct SettingsSidebar: View {
-    @Binding var pane: SettingsPane
-    @Binding var query: String
-    @Environment(\.colorScheme) private var scheme
-
-    /// Measured from the grouped Form cards so the sidebar reads as the same material.
-    static let cardRadius: CGFloat = 12
-
-    var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search", text: $query)
-                    .textFieldStyle(.plain)
-                    .onChange(of: query) { _, q in
-                        if !pane.matches(q), let first = SettingsPane.allCases.first(where: { $0.matches(q) }) { pane = first }
-                    }
-                if !query.isEmpty {
-                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
-                        .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(SettingsPane.groups) { group in
-                        let panes = group.panes.filter { $0.matches(query) }
-                        if !panes.isEmpty {
-                            if let title = group.title {
-                                Text(title)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 8)
-                                    .padding(.top, 10)
-                                    .padding(.bottom, 2)
-                            }
-                            ForEach(panes) { item in
-                                SidebarRow(pane: item, selected: item == pane) { pane = item }
-                            }
-                        }
-                    }
-                }
-            }
-            .scrollIndicators(.never)
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: Self.cardRadius, style: .continuous)
-                .fill(scheme == .dark ? Color.white.opacity(0.045) : Color.white)
-        )
-    }
-}
-
-private struct SidebarRow: View {
-    var pane: SettingsPane
-    var selected: Bool
-    var action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                SettingsBadge(symbol: pane.symbol, tint: pane.tint)
-                Text(pane.title).font(.system(size: 13))
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(selected ? Color.accentColor.opacity(0.85) : (hovering ? Color.primary.opacity(0.06) : .clear))
-            )
-            .foregroundStyle(selected ? Color.white : Color.primary)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
     }
 }
 

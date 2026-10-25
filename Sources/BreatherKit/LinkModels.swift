@@ -226,6 +226,8 @@ public enum LinkMessage: Codable, Equatable, Sendable {
     case deviceStatus(watchConnected: Bool)
     /// Mac → phone: today's and this week's stats for the dashboard.
     case stats(StatsSnapshot)
+    /// Mac → phone: a small PNG app icon for the Stats dashboard, sent once per app.
+    case appIcon(id: String, png: Data)
 }
 
 /// A message on the wire. Pairing messages travel unsigned; everything after is HMAC-signed
