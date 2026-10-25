@@ -46,7 +46,7 @@ enum AssetRenderer {
         if let i = args.firstIndex(of: "--render-social"), i + 1 < args.count {
             AppModel.shared.prepareForSnapshots()
             // Open Graph card at 2× (2400×1260); with a second path, GitHub's 1280×640 card at 2× too.
-            write(SocialCard(app: AppModel.shared), scale: 2, to: URL(fileURLWithPath: args[i + 1]))
+            write(SocialCard(app: AppModel.shared, macScale: 0.85), scale: 2, to: URL(fileURLWithPath: args[i + 1]))
             if i + 2 < args.count, !args[i + 2].hasPrefix("-") {
                 write(SocialCard(app: AppModel.shared, size: CGSize(width: 1280, height: 640)), scale: 2,
                       to: URL(fileURLWithPath: args[i + 2]))
@@ -211,6 +211,7 @@ private struct SnapshotContent: View {
 private struct SocialCard: View {
     let app: AppModel
     var size = CGSize(width: 1200, height: 630)
+    var macScale: CGFloat = 1
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -223,6 +224,7 @@ private struct SocialCard: View {
 
             macBook
                 .frame(width: 580 * 1.1)
+                .scaleEffect(macScale)
                 .offset(x: size.width - 580 * 1.1 - 40, y: (size.height - 392) / 2)
 
             VStack(alignment: .leading, spacing: 0) {
