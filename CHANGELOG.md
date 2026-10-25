@@ -11,7 +11,7 @@ All notable changes to Breather. The format follows [Keep a Changelog](https://k
 - Each setup step now uses the same header and grouped cards as Settings, and the setup asks when you count as away.
 
 ### Break screen
-- Five distinct themes: Ocean Calm, Forest, Sunset Glow, Midnight Minimal and Paper.
+- Five distinct themes: Ocean Calm (aurora and ring), Forest (big digits), Paper (progress bar), Terminal (dots) and Midnight Minimal.
 - Wallpapers and photos load in the background. A wallpaper in Downloads or Desktop no longer freezes the window behind macOS's folder-access prompt or leaves it hidden afterwards.
 
 ## [0.9.1] - 2026-10-25

@@ -8,7 +8,7 @@ struct WelcomeView: View {
     var onDone: () -> Void
     @State var step: Step = .hello
 
-    enum Step: Int, CaseIterable, Identifiable {
+    enum Step: Int, CaseIterable, SidebarItem {
         case hello, rhythm, breaks, look, notch, done
 
         var id: Int { rawValue }
@@ -132,31 +132,56 @@ private struct StepHeader: View {
 // MARK: - Panes
 
 private struct HelloPane: View {
+    @Environment(\.colorScheme) private var scheme
+
     var body: some View {
-        Form {
-            Section {
-                VStack(spacing: 8) {
-                    BreatherAppIcon().frame(width: 72, height: 72)
-                    Text("Welcome to \(Brand.name)").font(.title2.bold())
-                    Text(Brand.tagline).font(.callout).foregroundStyle(.secondary)
+        // Built from the same cards as the grouped Forms, but stretched to fill the window.
+        VStack(spacing: 16) {
+            VStack(spacing: 10) {
+                BreatherAppIcon().frame(width: 104, height: 104)
+                Text("Welcome to \(Brand.name)").font(.system(size: 28, weight: .bold))
+                Text(Brand.tagline).font(.title3).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 30)
+            .background(card)
+
+            VStack(spacing: 0) {
+                ForEach(Array(features.enumerated()), id: \.offset) { index, f in
+                    if index > 0 { Divider().padding(.leading, 70).padding(.trailing, 18) }
+                    Feature(symbol: f.0, tint: f.1, title: f.2, detail: f.3, badge: 38)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .padding(.horizontal, 18)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
             }
-            Section {
-                Feature(symbol: "rectangle.topthird.inset.filled", tint: Brand.teal, title: "Lives in your notch",
-                        detail: "A heads-up grows out of the notch before each break. Hover the notch to peek at your next one.")
-                Feature(symbol: "brain.head.profile.fill", tint: .indigo, title: "Knows when not to interrupt",
-                        detail: "Breaks wait while you're in a call, watching a video, presenting, or mid-sentence.")
-                Feature(symbol: "figure.walk", tint: Brand.mint, title: "Counts real rest",
-                        detail: "Step away from your Mac and that time counts as a break.")
-                Feature(symbol: "lock.shield.fill", tint: .gray, title: "Private by design",
-                        detail: "No account and no tracking. Everything stays on this Mac.")
-            } footer: {
-                Text("Takes about a minute. You can change anything later in Settings.")
-                    .font(.callout).foregroundStyle(.secondary)
-            }
+            .padding(.vertical, 6)
+            .frame(maxHeight: .infinity)
+            .background(card)
+
+            Text("Takes about a minute. You can change anything later in Settings.")
+                .font(.callout).foregroundStyle(.secondary)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 4)
+    }
+
+    private var card: some View {
+        RoundedRectangle(cornerRadius: CardSidebar<WelcomeView.Step>.cardRadius, style: .continuous)
+            .fill(scheme == .dark ? Color.white.opacity(0.045) : Color.white)
+    }
+
+    private var features: [(String, Color, String, String)] {
+        [
+            ("rectangle.topthird.inset.filled", Brand.teal, "Lives in your notch",
+             "A heads-up grows out of the notch before each break. Hover the notch to peek at your next one."),
+            ("brain.head.profile.fill", .indigo, "Knows when not to interrupt",
+             "Breaks wait while you're in a call, watching a video, presenting, or mid-sentence."),
+            ("figure.walk", Brand.mint, "Counts real rest",
+             "Step away from your Mac and that time counts as a break."),
+            ("lock.shield.fill", .gray, "Private by design",
+             "No account and no tracking. Everything stays on this Mac."),
+        ]
     }
 }
 
@@ -365,10 +390,11 @@ private struct Feature: View {
     var tint: Color
     var title: String
     var detail: String
+    var badge: CGFloat = 30
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            SettingsBadge(symbol: symbol, tint: tint, size: 30)
+        HStack(alignment: .center, spacing: 14) {
+            SettingsBadge(symbol: symbol, tint: tint, size: badge)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline)
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)

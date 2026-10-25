@@ -168,7 +168,7 @@ struct BreakTheme: Identifiable {
     let id: String
     let appearance: BreakAppearance
 
-    /// Five looks that each feel different: animated aurora, bold digits, warm gradient, black minimal, light paper.
+    /// Five looks that each feel different: ocean aurora with a ring, forest with big digits, paper with a bar, terminal with dots, midnight minimal.
     static let all: [BreakTheme] = [
         BreakTheme(id: "Ocean Calm", appearance: .default),
         BreakTheme(id: "Forest", appearance: {
@@ -179,23 +179,22 @@ struct BreakTheme: Identifiable {
             a.showBreathingHalo = false; a.showBreathingCue = true; a.showClock = true; a.showHint = false
             return a
         }()),
-        BreakTheme(id: "Sunset Glow", appearance: {
-            var a = BreakAppearance(); a.background = .gradient
-            a.gradientTop = RGBA(0.93, 0.47, 0.36); a.gradientBottom = RGBA(0.22, 0.07, 0.26)
-            a.timerStyle = .dots; a.timerWeight = .semibold; a.accent = RGBA(1, 0.9, 0.78)
-            a.messageDesign = .serif; a.messageWeight = .medium; a.showBreathingCue = true
-            return a
-        }()),
-        BreakTheme(id: "Midnight Minimal", appearance: {
-            var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0.02, 0.02, 0.03)
-            a.timerStyle = .digits; a.timerDesign = .standard; a.timerWeight = .ultraLight; a.timerScale = 1.4
-            a.showBreathingHalo = false; a.showKindLabel = false; a.showHint = false; return a
-        }()),
         BreakTheme(id: "Paper", appearance: {
             var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0.96, 0.94, 0.89)
             a.textColor = RGBA(0.16, 0.14, 0.12); a.accent = RGBA(0.16, 0.14, 0.12)
             a.timerStyle = .bar; a.timerDesign = .serif; a.timerWeight = .light
             a.messageDesign = .serif; a.messageWeight = .regular; a.showBreathingHalo = false; return a
+        }()),
+        BreakTheme(id: "Terminal", appearance: {
+            var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0, 0, 0)
+            a.textColor = RGBA(0.45, 1, 0.6); a.accent = RGBA(0.45, 1, 0.6)
+            a.timerStyle = .dots; a.timerDesign = .mono; a.timerWeight = .regular
+            a.messageDesign = .mono; a.messageWeight = .regular; a.showBreathingHalo = false; return a
+        }()),
+        BreakTheme(id: "Midnight Minimal", appearance: {
+            var a = BreakAppearance(); a.background = .solid; a.solidColor = RGBA(0.02, 0.02, 0.03)
+            a.timerStyle = .digits; a.timerDesign = .standard; a.timerWeight = .ultraLight; a.timerScale = 1.4
+            a.showBreathingHalo = false; a.showKindLabel = false; a.showHint = false; return a
         }()),
     ]
 }
