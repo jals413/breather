@@ -76,69 +76,90 @@ extension WatchModel: WCSessionDelegate {
 struct WatchHomeView: View {
     let model: WatchModel
 
+    private var onBreak: Bool { model.state?.mode == .onBreak }
+
     var body: some View {
-        NavigationStack {
+        ZStack {
+            if onBreak { AuroraBackground() } else { NightBackground() }
             ScrollView {
-                VStack(spacing: 12) {
-                    WatchRing(state: model.state)
-                    if let state = model.state {
-                        Text(state.mode == .onBreak ? (state.breakMessage ?? "Look away.") : state.detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
+                VStack(spacing: 10) {
+                    WatchHero(state: model.state)
                     actions
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 6)
             }
-            .navigationTitle("Breather")
         }
+        .foregroundStyle(.white)
+        .animation(.easeInOut(duration: 0.6), value: onBreak)
     }
 
-    @ViewBuilder
     private var actions: some View {
         let mode = model.state?.mode
-        VStack(spacing: 8) {
+        let columns = [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)]
+        return LazyVGrid(columns: columns, spacing: 6) {
             if mode == .onBreak {
-                Button("+5 min", systemImage: "clock.arrow.circlepath") { model.send(.snooze(minutes: 5)) }
-                Button("End Break", systemImage: "checkmark") { model.send(.endBreak) }
+                ActionTile("+5 min", symbol: "clock.arrow.circlepath", tint: Brand.amber) { model.send(.snooze(minutes: 5)) }
+                ActionTile("End break", symbol: "checkmark", tint: Brand.mint) { model.send(.endBreak) }
             } else {
-                Button("Break Now", systemImage: "eye.fill") { model.send(.breakNow) }
-                    .tint(Brand.teal)
+                ActionTile("Break now", symbol: "eye.fill") { model.send(.breakNow) }
                 if mode == .paused {
-                    Button("Resume", systemImage: "play.fill") { model.send(.resume) }
+                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { model.send(.resume) }
                 } else {
-                    Button("Pause 30 min", systemImage: "pause.fill") { model.send(.pause(minutes: 30)) }
+                    ActionTile("Pause", symbol: "pause.fill", tint: .white) { model.send(.pause(minutes: 30)) }
                 }
-                Button("Skip Next", systemImage: "forward.end.fill") { model.send(.skipNext) }
+                ActionTile("5 min break", symbol: "cup.and.saucer.fill", tint: Brand.sky) { model.send(.breakFor(minutes: 5)) }
+                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber) { model.send(.skipNext) }
             }
         }
+        .actionTileTitles(false)  // icon-only, like the notch
         .disabled(!model.phoneReachable)
     }
 }
 
-private struct WatchRing: View {
+/// Same ring, tones and countdown as the notch and the iPhone.
+private struct WatchHero: View {
     let state: MacState?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            ZStack {
-                ProgressRing(progress: progress(context.date), color: state?.mode == .onBreak ? Brand.mint : Brand.teal,
-                             lineWidth: 8, track: .white.opacity(0.15))
-                VStack(spacing: 0) {
-                    if let range = state?.countdown {
-                        Text(timerInterval: range, countsDown: true)
-                            .font(.system(.title2, design: .rounded).weight(.semibold))
-                            .monospacedDigit()
-                            .multilineTextAlignment(.center)
-                    } else {
-                        BreatherMark(color: .white).frame(width: 34, height: 34)
+            VStack(spacing: 6) {
+                ZStack {
+                    if state?.mode == .onBreak {
+                        BreathingHalo(color: .white, reduceMotion: reduceMotion).frame(width: 160, height: 160)
                     }
-                    Text(state?.headline ?? "Open on iPhone").font(.caption2).foregroundStyle(.secondary)
+                    StatusRing(progress: progress(context.date), tone: state?.tone(at: context.date) ?? .idle, lineWidth: 7) {
+                        VStack(spacing: 1) {
+                            if let range = state?.countdown {
+                                Text(timerInterval: range, countsDown: true)
+                                    .font(BrandStyle.numeral(26))
+                                    .multilineTextAlignment(.center)
+                            } else {
+                                BreatherMark(color: .white).frame(width: 32, height: 32)
+                            }
+                            Text(state?.headline ?? "Open on iPhone")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(BrandStyle.secondaryText)
+                                .lineLimit(1)
+                        }
+                        .frame(width: 96)
+                    }
+                    .frame(width: 118, height: 118)
                 }
+                .frame(height: 124)
+                Text(subtitle(context.date))
+                    .font(.system(size: 13))
+                    .foregroundStyle(BrandStyle.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
-            .frame(width: 120, height: 120)
         }
+    }
+
+    private func subtitle(_ date: Date) -> String {
+        guard let state else { return "Pair Breather on your iPhone." }
+        if state.mode == .onBreak { return BreathCycle.inhaling(at: date) ? "Breathe in" : "Breathe out" }
+        return state.detail
     }
 
     private func progress(_ date: Date) -> Double {

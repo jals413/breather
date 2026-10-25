@@ -7,54 +7,66 @@ struct PairView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 28) {
-                ZStack {
-                    Circle().fill(Brand.gradient).frame(width: 120, height: 120)
-                        .shadow(color: Brand.teal.opacity(0.4), radius: 20, y: 10)
-                    BreatherMark(color: .white).frame(width: 64, height: 64)
-                }
-                .padding(.top, 40)
+        ZStack {
+            NightBackground()
+            ScrollView {
+                VStack(spacing: 26) {
+                    ZStack {
+                        BreathingHalo(color: Brand.mint).frame(width: 220, height: 220)
+                        Circle().fill(Brand.gradient).frame(width: 112, height: 112)
+                            .shadow(color: Brand.teal.opacity(0.5), radius: 24, y: 10)
+                        BreatherMark(color: .white).frame(width: 60, height: 60)
+                    }
+                    .frame(height: 200)
+                    .padding(.top, 20)
 
-                VStack(spacing: 8) {
-                    Text("Breather for iPhone").font(.largeTitle.bold())
-                    Text("See your Mac's breaks on your Lock Screen and Dynamic Island, and feel them on your Apple Watch.")
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
-                }
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Step(number: 1, text: "On your Mac, open Breather Settings → iPhone & Apple Watch.")
-                    Step(number: 2, text: "Turn on “Connect to iPhone & Apple Watch”, then click “Pair a New iPhone…”.")
-                    Step(number: 3, text: "Type the 6-digit code here.")
-                }
-                .padding(18)
-                .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(.secondarySystemGroupedBackground)))
-
-                CodeField(code: $code, focused: $focused)
-                    .onChange(of: code) { _, new in
-                        let digits = String(new.filter(\.isNumber).prefix(LinkConstants.pairingCodeLength))
-                        if digits != new { code = digits }
-                        if digits.count == LinkConstants.pairingCodeLength { model.pair(code: digits) }
+                    VStack(spacing: 8) {
+                        Text("Breather").font(.system(size: 34, weight: .bold))
+                        Text(Brand.tagline).font(.title3).foregroundStyle(BrandStyle.secondaryText)
+                        Text("Your Mac's breaks on your Lock Screen and Dynamic Island, and a tap on your Apple Watch.")
+                            .font(.callout)
+                            .foregroundStyle(BrandStyle.tertiaryText)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
                     }
 
-                if let status = model.pairingStatus {
-                    HStack(spacing: 8) {
-                        if model.isPairing { ProgressView() }
-                        Text(status).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Step(number: 1, text: "On your Mac, open Breather Settings → iPhone & Apple Watch.")
+                        Step(number: 2, text: "Click “Pair a New iPhone…” and scan the QR code with your camera.")
+                        Step(number: 3, text: "Or type the 6-digit code below.")
                     }
-                }
+                    .brandCard(padding: 18)
 
-                Label(model.isConnected ? "Your Mac is nearby" : "Looking for your Mac…",
-                      systemImage: model.isConnected ? "checkmark.circle.fill" : "dot.radiowaves.left.and.right")
-                    .font(.footnote)
-                    .foregroundStyle(model.isConnected ? Brand.teal : .secondary)
+                    CodeField(code: $code, focused: $focused)
+                        .onChange(of: code) { _, new in
+                            let digits = String(new.filter(\.isNumber).prefix(LinkConstants.pairingCodeLength))
+                            if digits != new { code = digits }
+                            if digits.count == LinkConstants.pairingCodeLength { model.pair(code: digits) }
+                        }
+
+                    if let status = model.pairingStatus {
+                        HStack(spacing: 8) {
+                            if model.isPairing { ProgressView().tint(.white) }
+                            Text(status).font(.callout).foregroundStyle(BrandStyle.secondaryText).multilineTextAlignment(.center)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        Circle().fill(model.isConnected ? Brand.mint : BrandStyle.tertiaryText).frame(width: 7, height: 7)
+                        Text(model.isConnected ? "Your Mac is nearby" : "Looking for your Mac…")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(BrandStyle.secondaryText)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(BrandStyle.cardFill))
+                }
+                .padding(.horizontal, 22)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .scrollIndicators(.hidden)
         }
-        .background(Color(.systemGroupedBackground))
-        .onAppear { focused = true }
+        .foregroundStyle(.white)
     }
 }
 
@@ -66,15 +78,15 @@ private struct Step: View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(number)")
                 .font(.footnote.bold())
-                .foregroundStyle(.white)
+                .foregroundStyle(Brand.night)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(Brand.teal))
-            Text(text).font(.callout)
+                .background(Circle().fill(Brand.mint))
+            Text(text).font(.callout).foregroundStyle(.white.opacity(0.9))
         }
     }
 }
 
-/// Six boxes over a hidden text field, like Apple's verification code entry.
+/// Six glass boxes over a hidden text field, like Apple's verification code entry.
 private struct CodeField: View {
     @Binding var code: String
     var focused: FocusState<Bool>.Binding
@@ -90,11 +102,12 @@ private struct CodeField: View {
                 ForEach(0..<LinkConstants.pairingCodeLength, id: \.self) { i in
                     let chars = Array(code)
                     Text(i < chars.count ? String(chars[i]) : "")
-                        .font(.system(size: 30, weight: .semibold, design: .rounded))
+                        .font(BrandStyle.numeral(28))
                         .frame(width: 46, height: 58)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(.secondarySystemGroupedBackground)))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(i == chars.count ? Brand.teal : .clear, lineWidth: 2))
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(BrandStyle.cardFill))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(focused.wrappedValue && i == chars.count ? Brand.mint : BrandStyle.cardStroke,
+                                          lineWidth: focused.wrappedValue && i == chars.count ? 2 : 1))
                 }
             }
             .allowsHitTesting(false)

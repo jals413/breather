@@ -250,33 +250,6 @@ private struct TimerView: View {
 
 // MARK: - Breathing
 
-/// 8-second breath: 4s in, 4s out. Shared by the halo and the cue so they stay in sync.
-enum BreathCycle {
-    static let period: TimeInterval = 8
-    /// 0 → fully exhaled, 1 → fully inhaled.
-    static func level(at date: Date) -> Double {
-        let t = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) / period
-        return 0.5 - 0.5 * cos(2 * .pi * t)
-    }
-    static func inhaling(at date: Date) -> Bool {
-        date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) < period / 2
-    }
-}
-
-struct BreathingHalo: View {
-    var color: Color = .white
-    var reduceMotion: Bool
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
-            let level = reduceMotion ? 0.5 : BreathCycle.level(at: context.date)
-            Circle()
-                .fill(RadialGradient(colors: [color.opacity(0.18), color.opacity(0)], center: .center, startRadius: 10, endRadius: 160))
-                .scaleEffect(0.78 + 0.4 * level)
-        }
-    }
-}
-
 private struct BreathingCue: View {
     var now: Date
     var color: Color
@@ -303,7 +276,7 @@ struct BreakBackgroundView: View {
     var body: some View {
         switch appearance.background {
         case .aurora:
-            AuroraBackground(palette: appearance.auroraPalette, animated: appearance.animateBackground)
+            AuroraBackground(colors: appearance.auroraPalette.colors, animated: appearance.animateBackground)
         case .gradient:
             LinearGradient(colors: [appearance.gradientTop.color, appearance.gradientBottom.color], startPoint: .top, endPoint: .bottom)
         case .solid:
@@ -333,28 +306,7 @@ struct BreakBackgroundView: View {
                 .frame(width: size.width, height: size.height)
                 .clipped()
         } else {
-            AuroraBackground(palette: appearance.auroraPalette, animated: appearance.animateBackground)
-        }
-    }
-}
-
-struct AuroraBackground: View {
-    var palette: AuroraPalette = .ocean
-    var animated = true
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion || !animated)) { context in
-            let t = (reduceMotion || !animated) ? 0 : context.date.timeIntervalSinceReferenceDate
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5], [Float(0.5 + 0.18 * sin(t * 0.21)), Float(0.5 + 0.14 * cos(t * 0.17))], [1, 0.5],
-                    [0, 1], [Float(0.5 + 0.2 * cos(t * 0.13)), 1], [1, 1],
-                ],
-                colors: palette.colors
-            )
+            AuroraBackground(colors: appearance.auroraPalette.colors, animated: appearance.animateBackground)
         }
     }
 }

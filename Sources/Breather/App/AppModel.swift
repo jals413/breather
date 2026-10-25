@@ -564,6 +564,17 @@ final class AppModel {
         }
     }
 
+    /// The brand status colour for the current moment (same language as the iPhone and Watch).
+    var tone: BrandTone {
+        switch engine.phase {
+        case .working: engine.timeUntilBreak <= 60 ? .soon : .focus
+        case .holding: .soon
+        case .smartPaused: .hold
+        case .onBreak: .rest
+        case .paused, .away, .offHours: .idle
+        }
+    }
+
     // MARK: Status text (menu bar + dashboard)
 
     var statusTitle: String {

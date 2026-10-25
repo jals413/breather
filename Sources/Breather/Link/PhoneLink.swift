@@ -36,7 +36,6 @@ final class PhoneLink {
     @ObservationIgnored let apns = APNsClient()
 
     private static let devicesKey = "phone.devices"
-    private static let secretAccount = "phone-link-secret"
 
     var isRunning: Bool { lan != nil || ble != nil }
     var macName: String { Host.current().localizedName ?? "Mac" }
@@ -52,7 +51,12 @@ final class PhoneLink {
            let saved = try? JSONDecoder().decode([PairedDevice].self, from: data) {
             devices = saved
         }
-        secret = Keychain.read(Self.secretAccount).flatMap { SymmetricKey(base64: $0) }
+        secret = SecretFile.read().flatMap { SymmetricKey(base64: $0) }
+        // A secret from an older build (or a reset) is gone: those phones must pair again.
+        if secret == nil && !devices.isEmpty {
+            devices.removeAll()
+            saveDevices()
+        }
     }
 
     // MARK: Lifecycle
@@ -100,7 +104,7 @@ final class PhoneLink {
         if devices.isEmpty {
             // Rotate the secret so a forgotten phone can't reconnect.
             secret = nil
-            Keychain.delete(Self.secretAccount)
+            SecretFile.delete()
         }
     }
 
@@ -163,7 +167,7 @@ final class PhoneLink {
         } else {
             key = SymmetricKey(size: .bits256)
             secret = key
-            Keychain.write(key.base64, account: Self.secretAccount)
+            SecretFile.write(key.base64)
         }
         devices.removeAll { $0.id == request.deviceID }
         devices.append(PairedDevice(id: request.deviceID, name: request.deviceName, pairedAt: .now, lastSeen: .now))
@@ -179,28 +183,27 @@ final class PhoneLink {
     }
 }
 
-/// Minimal Keychain wrapper for the link secret.
-enum Keychain {
-    private static let service = "com.jalthakor.breather"
-
-    static func read(_ account: String) -> String? {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                    kSecAttrAccount as String: account, kSecReturnData as String: true]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+/// The link secret, in Breather's own data folder and readable only by your user account.
+///
+/// Not in the Keychain on purpose: while Breather is built and signed ad hoc, every rebuild
+/// looks like a new app to macOS, which then asks for your login password to read the item.
+/// A Developer ID–signed release could use the Keychain without prompts.
+enum SecretFile {
+    private static var url: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Breather/link.key")
     }
 
-    static func write(_ value: String, account: String) {
-        delete(account)
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                    kSecAttrAccount as String: account, kSecValueData as String: Data(value.utf8)]
-        SecItemAdd(query as CFDictionary, nil)
+    static func read() -> String? {
+        (try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    static func delete(_ account: String) {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                    kSecAttrAccount as String: account]
-        SecItemDelete(query as CFDictionary)
+    static func write(_ value: String) {
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: url.path, contents: Data(value.utf8), attributes: [.posixPermissions: 0o600])
+    }
+
+    static func delete() {
+        try? FileManager.default.removeItem(at: url)
     }
 }

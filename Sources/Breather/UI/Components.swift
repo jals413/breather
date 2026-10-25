@@ -36,38 +36,3 @@ enum Format {
     }
 }
 
-/// Small capsule button used on the island's black surface.
-struct IslandButton: View {
-    enum Style { case primary, normal, subtle }
-    var title: String
-    var symbol: String? = nil
-    var style: Style = .normal
-    var action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .semibold)) }
-                Text(title).font(.system(size: 12, weight: .semibold))
-            }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
-            .foregroundStyle(style == .primary ? Color.black : .white.opacity(style == .subtle ? 0.6 : 0.95))
-            .background(
-                Capsule().fill(background.opacity(hovering ? 1 : 0.85))
-            )
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-    }
-
-    private var background: Color {
-        switch style {
-        case .primary: Brand.mint
-        case .normal: .white.opacity(0.14)
-        case .subtle: .white.opacity(0.06)
-        }
-    }
-}

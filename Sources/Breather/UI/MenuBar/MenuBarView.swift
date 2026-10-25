@@ -27,80 +27,72 @@ struct MenuBarLabel: View {
     }
 }
 
-/// Control Center–style popover: a status card, round toggles, then quiet text actions.
+/// The menu bar popover, in the same night-and-glass style as the notch and the iPhone app.
 struct MenuBarView: View {
     let app: AppModel
 
     var body: some View {
         let engine = app.engine
-        VStack(spacing: 10) {
-            StatusCard(app: app)
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                BreatherMark(color: Brand.mint, rippleOpacity: 0.6).frame(width: 18, height: 18)
+                Text(Brand.name).font(.system(size: 15, weight: .semibold))
+                Spacer()
+                if !app.store.settings.profiles.isEmpty { ProfileRowMenu(app: app) }
+            }
 
-            HStack(spacing: 10) {
-                RoundToggle(title: "Break now", symbol: "eye.fill", isOn: false) { app.breakNow() }
+            HStack(spacing: 14) {
+                StatusRing(progress: engine.workProgress, tone: app.tone, lineWidth: 6) {
+                    Text(Format.clock(engine.timeUntilBreak))
+                        .font(BrandStyle.numeral(14))
+                        .contentTransition(.numericText(countsDown: true))
+                }
+                .frame(width: 66, height: 66)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(app.statusTitle).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                    Text(app.statusSubtitle).font(.system(size: 12)).foregroundStyle(BrandStyle.secondaryText).lineLimit(2)
+                }
+                Spacer(minLength: 0)
+                BrandStat("\(app.log.takenToday)", label: "today", tint: Brand.mint).fixedSize()
+            }
+            .brandCard(padding: 14)
+
+            HStack(spacing: 8) {
+                ActionTile("Break now", symbol: "eye.fill") { app.breakNow() }
                     .disabled(engine.isOnBreak)
-                RoundToggle(title: isPaused ? "Paused" : "Pause", symbol: "pause.fill", isOn: isPaused) { app.togglePause() }
-                RoundToggle(title: "Skip next", symbol: "forward.end.fill", isOn: engine.skipNextPending, tint: Brand.amber) {
+                ActionTile(isPaused ? "Resume" : "Pause", symbol: isPaused ? "play.fill" : "pause.fill",
+                           tint: .white, active: isPaused) { app.togglePause() }
+                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                     engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
-                RoundToggle(title: "Long break", symbol: "figure.walk", isOn: false) { engine.startBreak(kind: .long) }
+                ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { engine.startBreak(kind: .long) }
                     .disabled(engine.isOnBreak)
-            }
-            .padding(12)
-            .background(Card())
-
-            if !app.store.settings.profiles.isEmpty {
-                ProfileRowMenu(app: app)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Card())
             }
 
             if !engine.isOnBreak {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Take a break for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                    HStack(spacing: 6) {
-                        ForEach([1.0, 2, 5, 10, 15], id: \.self) { minutes in
-                            Chip(title: "\(Int(minutes)) min") { app.customBreak(minutes: minutes) }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(Card())
+                PillRow(title: "Take a break for", options: [1, 5, 10, 15].map { ("\($0) min", Double($0)) }) { app.customBreak(minutes: $0) }
             }
-
             if !isPaused {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Pause for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                    HStack(spacing: 6) {
-                        ForEach(PauseOption.all.prefix(4)) { option in
-                            Chip(title: option.shortTitle) { app.pause(option) }
-                        }
-                    }
+                PillRow(title: "Pause for", options: PauseOption.all.prefix(4).enumerated().map { ($1.shortTitle, Double($0)) }) {
+                    app.pause(PauseOption.all[Int($0)])
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(Card())
             }
 
-            HStack {
-                Button("Restart timer") { engine.restartCycle() }
-                Spacer()
-                Button("Stats") { app.openStats() }
-                Button("Settings…") { app.openSettings() }
+            HStack(spacing: 6) {
+                PillButton("Stats", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
+                PillButton("Settings", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
                     .keyboardShortcut(",")
-                Button("Quit") { NSApp.terminate(nil) }
+                Spacer()
+                PillButton("Quit", style: .subtle) { NSApp.terminate(nil) }
                     .keyboardShortcut("q")
             }
-            .buttonStyle(.borderless)
-            .font(.callout)
-            .padding(.horizontal, 6)
-            .padding(.top, 2)
         }
-        .padding(12)
-        .frame(width: 320)
+        .padding(14)
+        .frame(width: 340)
+        .foregroundStyle(.white)
+        .background(NightBackground())
+        .environment(\.colorScheme, .dark)
     }
 
     private var isPaused: Bool {
@@ -109,89 +101,21 @@ struct MenuBarView: View {
     }
 }
 
-private struct Card: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(.quaternary.opacity(0.5))
-    }
-}
-
-private struct StatusCard: View {
-    let app: AppModel
-
-    var body: some View {
-        let engine = app.engine
-        HStack(spacing: 14) {
-            ZStack {
-                ProgressRing(progress: engine.workProgress, color: Brand.mint, lineWidth: 5, track: .secondary.opacity(0.18))
-                BreatherMark(color: .primary, rippleOpacity: 0.5)
-                    .frame(width: 22, height: 22)
-            }
-            .frame(width: 50, height: 50)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(app.statusTitle).font(.headline).lineLimit(1)
-                Text(app.statusSubtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            }
-            Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("\(app.log.takenToday)").font(.system(size: 22, weight: .semibold, design: .rounded))
-                Text("today").font(.caption2).foregroundStyle(.secondary)
-            }
-        }
-        .padding(14)
-        .background(Card())
-    }
-}
-
-/// Round Control Center–style toggle with a label underneath.
-private struct RoundToggle: View {
+/// A labelled row of small pill buttons.
+private struct PillRow: View {
     var title: String
-    var symbol: String
-    var isOn: Bool
-    var tint: Color = Brand.teal
-    var action: () -> Void
-    @State private var hovering = false
-    @Environment(\.isEnabled) private var isEnabled
+    var options: [(String, Double)]
+    var action: (Double) -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(isOn ? .white : .primary)
-                    .frame(width: 40, height: 40)
-                    .background(Circle().fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.quaternary)))
-                    .overlay(Circle().fill(.primary.opacity(hovering && isEnabled ? 0.08 : 0)))
-                Text(title).font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
+        VStack(alignment: .leading, spacing: 7) {
+            BrandSectionLabel(title)
+            HStack(spacing: 6) {
+                ForEach(options, id: \.0) { option in
+                    PillButton(option.0, style: .normal, stretch: true) { action(option.1) }
+                }
             }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .opacity(isEnabled ? 1 : 0.4)
-    }
-}
-
-private struct Chip: View {
-    var title: String
-    var action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .frame(maxWidth: .infinity)
-                .background(Capsule().fill(.quaternary.opacity(hovering ? 1 : 0.6)))
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
     }
 }
 
@@ -211,21 +135,19 @@ private struct ProfileRowMenu: View {
             Divider()
             Button("Edit Profiles…") { app.openSettings() }
         } label: {
-            HStack(spacing: 10) {
-                Image(systemName: active?.symbol ?? "slider.horizontal.3")
-                    .foregroundStyle(Brand.teal)
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Profile").font(.caption).foregroundStyle(.secondary)
-                    Text(active?.name ?? "Custom").font(.callout.weight(.medium))
-                }
-                Spacer()
-                Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 5) {
+                Image(systemName: active?.symbol ?? "slider.horizontal.3").font(.system(size: 11, weight: .semibold))
+                Text(active?.name ?? "Custom").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).foregroundStyle(BrandStyle.tertiaryText)
             }
-            .contentShape(Rectangle())
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(BrandStyle.cardFill))
+            .foregroundStyle(.white)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
+        .fixedSize()
     }
 }

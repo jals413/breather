@@ -196,25 +196,6 @@ struct StatusTime: View {
 
 // MARK: - Shared pieces
 
-/// Leading badge used across island states.
-struct IslandBadge: View {
-    var symbol: String? = nil
-    var tint: Color = Brand.mint
-
-    var body: some View {
-        ZStack {
-            Circle().fill(tint.opacity(0.18))
-            if let symbol {
-                Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint)
-            } else {
-                BreatherMark(color: tint, rippleOpacity: 0.6)
-                    .frame(width: 20, height: 20)
-            }
-        }
-        .frame(width: 36, height: 36)
-    }
-}
-
 // MARK: - Heads-up
 
 struct HeadsUpView: View {
@@ -225,7 +206,7 @@ struct HeadsUpView: View {
         let engine = app.engine
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                IslandBadge(tint: Brand.amber)
+                BrandBadge(color: Brand.amber)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(kind == .long ? "Long break soon" : "Eye break soon")
                         .font(.system(size: 15, weight: .semibold))
@@ -242,14 +223,14 @@ struct HeadsUpView: View {
                     .foregroundStyle(Brand.amber)
             }
             HStack(spacing: 8) {
-                IslandButton(title: "Start now", style: .primary) { app.breakNow() }
+                PillButton("Start now", style: .primary) { app.breakNow() }
                 if engine.canSnooze {
-                    IslandButton(title: "+1 min") { app.snooze(60) }
-                    IslandButton(title: "+5 min") { app.snooze(5 * 60) }
+                    PillButton("+1 min") { app.snooze(60) }
+                    PillButton("+5 min") { app.snooze(5 * 60) }
                 }
                 Spacer()
                 if engine.canSkipInAdvance {
-                    IslandButton(title: "Skip", style: .subtle) { app.skipUpcoming() }
+                    PillButton("Skip", style: .subtle) { app.skipUpcoming() }
                 }
             }
         }
@@ -274,14 +255,14 @@ struct CountdownView: View {
         let lead = max(1, app.store.settings.finalCountdownSeconds)
         let seconds = Int(engine.timeUntilBreak.rounded(.up))
         HStack(spacing: 12) {
-            IslandBadge(tint: Brand.amber)
+            BrandBadge(color: Brand.amber)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Look away").font(.system(size: 15, weight: .semibold))
                 Text(engine.nextBreakKind.title).font(.system(size: 12)).foregroundStyle(.white.opacity(0.55))
             }
             Spacer()
             if engine.canSnooze {
-                IslandButton(title: "+1 min", style: .subtle) { app.snooze(60) }
+                PillButton("+1 min", style: .subtle) { app.snooze(60) }
             }
             ZStack {
                 ProgressRing(progress: engine.timeUntilBreak / lead, color: Brand.amber, lineWidth: 3.5)
@@ -306,7 +287,7 @@ struct ToastView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            IslandBadge(symbol: toast.symbol, tint: toast.tint)
+            BrandBadge(color: toast.tint, symbol: toast.symbol)
             VStack(alignment: .leading, spacing: 1) {
                 Text(toast.title).font(.system(size: 14, weight: .semibold))
                 if let subtitle = toast.subtitle {
@@ -315,10 +296,10 @@ struct ToastView: View {
             }
             Spacer(minLength: 8)
             if let secondary = toast.secondaryAction {
-                IslandButton(title: toast.secondaryTitle ?? "Later", style: .subtle) { app.perform(secondary) }
+                PillButton(toast.secondaryTitle ?? "Later", style: .subtle) { app.perform(secondary) }
             }
             if let action = toast.action {
-                IslandButton(title: toast.actionTitle ?? "Undo", style: toast.secondaryAction != nil ? .primary : .normal) {
+                PillButton(toast.actionTitle ?? "Undo", style: toast.secondaryAction != nil ? .primary : .normal) {
                     app.perform(action)
                 }
             }
@@ -360,20 +341,21 @@ struct DashboardView: View {
             }
 
             HStack(spacing: 8) {
-                IslandTile(title: "Break now", symbol: "eye.fill", tint: Brand.mint) { app.breakNow() }
+                ActionTile("Break now", symbol: "eye.fill", tint: Brand.mint) { app.breakNow() }
                 if case .paused = engine.phase {
-                    IslandTile(title: "Resume", symbol: "play.fill", tint: Brand.mint, active: true) { app.resume() }
+                    ActionTile("Resume", symbol: "play.fill", tint: Brand.mint, active: true) { app.resume() }
                 } else {
                     PauseTile(app: app)
                 }
-                IslandTile(title: engine.skipNextPending ? "Skipping" : "Skip next", symbol: "forward.end.fill",
+                ActionTile(engine.skipNextPending ? "Skipping" : "Skip next", symbol: "forward.end.fill",
                            tint: Brand.amber, active: engine.skipNextPending) {
                     app.engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
-                IslandTile(title: "Stats", symbol: "chart.bar.fill", tint: Brand.sky) { app.openStats() }
-                IslandTile(title: "Settings", symbol: "gearshape.fill", tint: .white) { app.openSettings() }
+                ActionTile("Stats", symbol: "chart.bar.fill", tint: Brand.sky) { app.openStats() }
+                ActionTile("Settings", symbol: "gearshape.fill", tint: .white) { app.openSettings() }
             }
+            .actionTileTitles(false)  // icon-only in the notch; titles show as tooltips
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
@@ -389,39 +371,6 @@ struct DashboardView: View {
     }
 }
 
-/// Control Center–style square-ish tile.
-struct IslandTile: View {
-    var title: String
-    var symbol: String
-    var tint: Color
-    var active = false
-    var action: () -> Void
-    @State private var hovering = false
-    @Environment(\.isEnabled) private var isEnabled
-
-    var body: some View {
-        Button(action: action) { label }
-            .buttonStyle(.plain)
-            .onHover { hovering = $0 }
-            .opacity(isEnabled ? 1 : 0.4)
-    }
-
-    /// Icon-only: the title becomes the tooltip and the VoiceOver label.
-    var label: some View {
-        Image(systemName: symbol)
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(active ? .black : tint)
-            .frame(width: 38, height: 38)
-            .background(Circle().fill(active ? tint : .white.opacity(0.12)))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
-            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(hovering ? 0.12 : 0.07)))
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .help(title)
-            .accessibilityLabel(title)
-    }
-}
-
 private struct PauseTile: View {
     let app: AppModel
 
@@ -431,7 +380,7 @@ private struct PauseTile: View {
                 Button(option.title) { app.pause(option) }
             }
         } label: {
-            IslandTile(title: "Pause", symbol: "pause.fill", tint: .white) {}.label
+            ActionTile("Pause", symbol: "pause.fill", tint: .white) {}.label
         }
         .menuStyle(.button)
         .buttonStyle(.plain)

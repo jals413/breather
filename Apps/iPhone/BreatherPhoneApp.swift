@@ -11,7 +11,8 @@ struct BreatherPhoneApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(model: model)
-                .tint(Brand.teal)
+                .tint(Brand.mint)
+                .preferredColorScheme(.dark)  // Breather is a night brand on every device
                 // breather-phone://pair?code=123456 — from the QR code on the Mac.
                 .onOpenURL { url in
                     guard url.host() == "pair",

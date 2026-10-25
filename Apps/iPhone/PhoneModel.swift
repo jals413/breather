@@ -24,6 +24,9 @@ final class PhoneModel {
     private(set) var routes: Set<LinkClient.Route> = []
     private(set) var pairingStatus: String?
     private(set) var isPairing = false
+    /// Connected, but the Mac no longer accepts our messages (it was reset or unpaired us).
+    private(set) var needsRepair = false
+    @ObservationIgnored private var lastVerified = Date.distantPast
 
     var liveActivityEnabled = UserDefaults.standard.object(forKey: "liveActivity") as? Bool ?? true {
         didSet { UserDefaults.standard.set(liveActivityEnabled, forKey: "liveActivity"); syncSurfaces(previous: state) }
@@ -104,6 +107,7 @@ final class PhoneModel {
 
     func unpair() {
         mac = nil
+        needsRepair = false
         UserDefaults.standard.removeObject(forKey: Self.macKey)
         state = nil
         SharedStore.state = nil
@@ -125,12 +129,21 @@ final class PhoneModel {
 
     private func sayHello() {
         sendSigned(.hello(deviceID: deviceID, deviceName: UIDevice.current.name))
+        // The Mac answers a hello with its state. Silence while connected means it forgot us.
+        Task {
+            try? await Task.sleep(for: .seconds(8))
+            if mac != nil, isConnected, Date.now.timeIntervalSince(lastVerified) > 8 { needsRepair = true }
+        }
     }
 
     // MARK: Incoming
 
     private func receive(_ data: Data) {
         guard let message = LinkEnvelope.open(data, secret: secret) else { return }
+        if case .state = message {
+            lastVerified = .now
+            needsRepair = false
+        }
         switch message {
         case .pairAccepted(let accepted):
             guard isPairing else { return }

@@ -166,6 +166,8 @@ final class LANClient {
     private var browser: NWBrowser?
     private var connection: NWConnection?
     private var framer = LinkFramer()
+    private var latest: [NWBrowser.Result] = []
+    private var retry: Task<Void, Never>?
 
     init(onMessage: @escaping (Data) -> Void, onReady: @escaping (Bool) -> Void) {
         self.onMessage = onMessage
@@ -177,8 +179,9 @@ final class LANClient {
         let browser = NWBrowser(for: .bonjour(type: LinkConstants.bonjourType, domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { [weak self] results, _ in
             Task { @MainActor in
-                guard let self, self.connection == nil, let first = results.first else { return }
-                self.connect(to: first.endpoint)
+                guard let self else { return }
+                self.latest = Array(results)
+                if self.connection == nil, let first = results.first { self.connect(to: first.endpoint) }
             }
         }
         browser.start(queue: .main)
@@ -186,6 +189,7 @@ final class LANClient {
     }
 
     func stop() {
+        retry?.cancel()
         browser?.cancel()
         browser = nil
         connection?.cancel()
@@ -207,7 +211,10 @@ final class LANClient {
                 case .ready: self.onReady(true)
                 case .failed, .cancelled:
                     self.onReady(false)
-                    if self.connection === connection { self.connection = nil }
+                    if self.connection === connection {
+                        self.connection = nil
+                        self.scheduleReconnect()
+                    }
                 default: break
                 }
             }
@@ -215,6 +222,17 @@ final class LANClient {
         connection.start(queue: .main)
         self.connection = connection
         receive(on: connection)
+    }
+
+    /// The Mac app restarted or the network blipped: try again shortly, while browsing.
+    private func scheduleReconnect() {
+        retry?.cancel()
+        retry = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled, self.browser != nil, self.connection == nil,
+                  let first = self.latest.first else { return }
+            self.connect(to: first.endpoint)
+        }
     }
 
     private func receive(on connection: NWConnection) {
