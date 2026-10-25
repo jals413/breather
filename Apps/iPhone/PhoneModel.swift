@@ -65,7 +65,43 @@ final class PhoneModel {
     var secret: SymmetricKey? { mac.flatMap { SymmetricKey(base64: $0.secret) } }
     var isConnected: Bool { !routes.isEmpty }
 
+    /// `-BreatherDemo` (or `-BreatherDemoBreak`) fills the app with sample data for screenshots.
+    /// Nothing real is shown and nothing connects.
+    private func startDemo(onBreak: Bool) {
+        mac = PairedMac(id: "demo", name: "MacBook Pro", secret: "")
+        routes = [.bluetooth]
+        watchConnected = true
+        let profiles = [ProfileSummary(id: "1", name: "Everyday", symbol: "sun.max.fill"),
+                        ProfileSummary(id: "2", name: "Deep Work", symbol: "brain.head.profile.fill"),
+                        ProfileSummary(id: "3", name: "Gentle", symbol: "leaf.fill")]
+        var demo = onBreak ? MacState.previewBreak : MacState.preview
+        if onBreak { demo.breakEnd = .now.addingTimeInterval(17); demo.breakStart = .now.addingTimeInterval(-3) }
+        demo.detail = onBreak ? "Short break" : "Break in 12 min"
+        demo.profiles = profiles
+        demo.activeProfileID = "1"
+        state = demo
+        let day: (Int, Double, Int) -> StatsSnapshot.Day = { offset, hours, score in
+            let date = Calendar.current.date(byAdding: .day, value: -offset, to: .now)!
+            let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+            return StatsSnapshot.Day(day: String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!),
+                                     screenSeconds: hours * 3600, score: score, taken: Int(hours * 3), skipped: score < 70 ? 3 : 1)
+        }
+        let usage: (String, Double) -> StatsSnapshot.Usage = { StatsSnapshot.Usage(id: $0, name: $0, seconds: $1 * 60) }
+        stats = StatsSnapshot(score: 88, rhythmPoints: 53, breakPoints: 35, screenSeconds: 5.4 * 3600, taken: 14, skipped: 1,
+                              longestSession: 34 * 60, medianSession: 19 * 60, currentSession: 8 * 60, targetSeconds: 1200,
+                              week: [day(6, 6.1, 72), day(5, 5.2, 81), day(4, 6.8, 64), day(3, 4.9, 86), day(2, 5.6, 90),
+                                     day(1, 3.2, 93), day(0, 5.4, 88)],
+                              topApps: [usage("Xcode", 128), usage("Safari", 74), usage("Figma", 51), usage("Messages", 22), usage("Notes", 14)],
+                              topSites: [usage("developer.apple.com", 41), usage("github.com", 28), usage("news.ycombinator.com", 9)],
+                              macName: "MacBook Pro")
+    }
+
     func start() {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-BreatherDemo") || args.contains("-BreatherDemoBreak") {
+            startDemo(onBreak: args.contains("-BreatherDemoBreak"))
+            return
+        }
         link.onMessage = { [weak self] data in self?.receive(data) }
         link.onRoutesChanged = { [weak self] routes in
             guard let self else { return }

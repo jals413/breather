@@ -6,6 +6,7 @@ struct NotchToast: Equatable, Identifiable {
         case undoNaturalBreak, resume
         case reminderDone(UUID), reminderLater(UUID)
         case startPlanned(UUID), skipPlanned, breakNow
+        case openURL(URL)
     }
     var id = UUID()
     var symbol: String

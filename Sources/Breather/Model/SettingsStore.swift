@@ -111,6 +111,7 @@ extension Settings {
         read(\.apnsTeamID, "apnsTeamID")
         read(\.apnsKeyID, "apnsKeyID")
         read(\.apnsKeyPath, "apnsKeyPath")
+        read(\.checkForUpdates, "checkForUpdates")
         read(\.launchAtLogin, "launchAtLogin")
         read(\.hotKeys, "hotKeys")
         if let keys = try? container.decode(HotKeysCompat.self, forKey: AnyKey("hotKeys")) { keys.apply(to: &hotKeys) }

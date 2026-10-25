@@ -200,6 +200,7 @@ public struct ActionTile: View {
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.actionTileTitles) private var showsTitle
+    @Environment(\.actionTileHoverLabels) private var hoverLabels
 
     public init(_ title: String, symbol: String, tint: Color = Brand.mint, active: Bool = false,
                 action: @escaping () -> Void) {
@@ -217,7 +218,7 @@ public struct ActionTile: View {
             .onHover { hovering = $0 }
             .pointerStyle(.link)
             // Icon-only tiles name themselves instantly on hover.
-            .hoverLabel(showsTitle ? nil : title, visible: hovering && isEnabled)
+            .hoverLabel(showsTitle || !hoverLabels ? nil : title, visible: hovering && isEnabled)
             #endif
             .accessibilityLabel(title)
             .opacity(isEnabled ? 1 : 0.4)
@@ -262,10 +263,13 @@ public struct ActionTileLabel: View {
 
 public extension EnvironmentValues {
     @Entry var actionTileTitles: Bool = true
+    @Entry var actionTileHoverLabels: Bool = true
 }
 
 public extension View {
     func actionTileTitles(_ show: Bool) -> some View { environment(\.actionTileTitles, show) }
+    /// Turn off the hover name for icon-only tiles (the notch shows none).
+    func actionTileHoverLabels(_ show: Bool) -> some View { environment(\.actionTileHoverLabels, show) }
 }
 
 /// Capsule button: primary (mint), normal (glass), subtle.

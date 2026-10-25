@@ -1,0 +1,29 @@
+name: Bug report
+description: Something isn't working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: macOS 26.6, MacBook Pro 14" M3
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Breather version
+      description: Settings → About
+  - type: textarea
+    id: diagnose
+    attributes:
+      label: Diagnostics (for Smart Pause issues)
+      description: Output of `/Applications/Breather.app/Contents/MacOS/Breather --diagnose`
+      render: text

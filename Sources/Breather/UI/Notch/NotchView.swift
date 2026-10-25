@@ -354,7 +354,8 @@ struct DashboardView: View {
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
                 ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { app.engine.startBreak(kind: .long) }
             }
-            .actionTileTitles(false)  // icon-only in the notch; titles show as tooltips
+            .actionTileTitles(false)  // icon-only in the notch
+            .actionTileHoverLabels(false)
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)

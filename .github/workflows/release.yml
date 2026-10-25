@@ -1,0 +1,61 @@
+name: Release
+
+# Push a tag like v1.2.3 to build and publish a release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # build number = commit count
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Test
+        run: swift test
+
+      - name: Build zip + DMG
+        run: scripts/release.sh "${GITHUB_REF_NAME}"
+
+      - name: Release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '/^## \[/{p = index($0, "[" v "]") > 0; next} p' CHANGELOG.md > dist/notes.md
+          cat >> dist/notes.md <<'NOTES'
+
+          ### Install
+          - **Homebrew:** `brew install --cask jals413/tap/breather`
+          - **One line:** `curl -fsSL https://jals413.github.io/breather/install.sh | bash`
+          - **Download** the DMG below. Breather isn't notarized, so approve it once in **System Settings → Privacy & Security → Open Anyway** ([guide](https://jals413.github.io/breather/install.html)).
+
+          SHA-256 checksums are in `checksums.txt`.
+          NOTES
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/*.zip dist/*.dmg dist/checksums.txt \
+            --title "Breather ${GITHUB_REF_NAME#v}" --notes-file dist/notes.md
+
+      - name: Update Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        if: env.TAP_TOKEN != ''
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/jals413/homebrew-tap.git" tap
+          scripts/update-cask.sh "${GITHUB_REF_NAME}" tap/Casks/breather.rb
+          cd tap
+          git config user.name "Breather Release Bot"
+          git config user.email "breather-release@users.noreply.github.com"
+          git add Casks/breather.rb
+          git commit -m "breather ${GITHUB_REF_NAME#v}"
+          git push

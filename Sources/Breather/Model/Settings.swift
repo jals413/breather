@@ -166,6 +166,8 @@ struct Settings: Codable, Equatable {
     var apnsKeyPath = ""
 
     // System
+    /// Once a day, ask GitHub whether a newer release exists. The only network request Breather makes.
+    var checkForUpdates = true
     var launchAtLogin = false
     var hotKeys = HotKeySettings()
 

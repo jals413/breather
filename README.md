@@ -1,106 +1,128 @@
 <p align="center"><img src="Resources/Branding/AppIcon-1024.png" width="128" alt="Breather icon"></p>
 
 <h1 align="center">Breather</h1>
-<p align="center"><b>Rest your eyes. Keep your flow.</b><br>Smart break reminders that live in your MacBook's notch.</p>
+<p align="center"><b>Rest your eyes. Keep your flow.</b><br>Break reminders that live in your MacBook's notch — free and open source.</p>
+
+<p align="center">
+  <a href="https://jals413.github.io/breather/">Website</a> ·
+  <a href="https://github.com/jals413/breather/releases/latest">Download</a> ·
+  <a href="https://jals413.github.io/breather/install.html">Install guide</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
 ---
 
-Breather reminds you to look away from the screen (20-20-20 by default) without wrecking your focus. It waits while you're in a call, watching something, presenting, or mid-sentence. Time you spend away from the Mac counts as a break, and everything stays on your Mac.
+Breather reminds you to look away from the screen (20-20-20 by default) without wrecking your focus. A heads-up grows out of the notch before each break, the break fills every display, and it waits politely while you're in a call, watching something, presenting, or mid-sentence. Time spent away from your Mac counts as a break. Nothing ever leaves your Mac.
+
+## Install
+
+Breather needs **macOS 26 Tahoe or later** (macOS 27 included) on Apple silicon or Intel.
+
+**Homebrew**
+
+```bash
+brew install --cask jals413/tap/breather
+```
+
+**One-line install**
+
+```bash
+curl -fsSL https://jals413.github.io/breather/install.sh | bash
+```
+
+**Download** — grab `Breather-x.y.z.dmg` from the [latest release](https://github.com/jals413/breather/releases/latest), open it and drag Breather to Applications.
+
+**From source** — see [Build from source](#build-from-source).
+
+### First launch: “Breather can't be opened”
+
+Breather is free and open source, and isn't notarized by Apple (that needs a paid developer membership). macOS therefore asks you to approve it once. Homebrew and the one-line installer do this for you; if you downloaded the DMG:
+
+1. Open Breather. macOS says it can't verify the developer — click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll to **Security**, and click **Open Anyway** next to Breather.
+3. Confirm with **Open Anyway** and your password. That's it — macOS remembers the choice.
+
+Prefer Terminal? This does the same thing:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Breather.app
+```
+
+Every release is built by [GitHub Actions](.github/workflows/release.yml) from the tagged source, and its SHA-256 checksums are published with it, so you can check what you're running.
 
 ## Features
 
-- **Notch island.** Heads-ups grow out of the hardware notch, Dynamic Island–style, with Start now / +1 min / +5 min / Skip. Hover the notch to see your next break. Displays without a notch get a floating pill instead.
-- **Full-screen breaks on every display**, above fullscreen apps, fully customisable:
-  - **8 themes:** Ocean Calm, Sunset, Forest, Lavender Breathe, Midnight Minimal, Paper, Terminal, Your Wallpaper.
-  - **Backgrounds:** animated aurora (6 palettes), gradient, solid colour, blurred wallpaper, your own photo, or a folder that rotates, plus blur and dim controls.
-  - **Timer:** ring, large digits, progress bar, dots or hidden. Choose the font (SF Pro, Rounded, New York, Mono), weight, size and accent colour.
-  - **Text and extras:** text colour, message font and size, and an optional "Breathe in / Breathe out" guide, clock and hints.
-  - A live preview in Settings.
-- **Reminders:** water, posture, blink, stand up, stretch, or your own. They appear in the notch with Done and Later, and count only time you're actually at your Mac.
-- **Planned breaks** at fixed times (like lunch). If you're in a call, they wait up to 45 minutes.
-- **Profiles** (Everyday, Deep Work, Gentle, or your own) save your rhythm, strictness and break look. Switch from the menu bar or the `breather://` scheme, or automatically when a chosen app is frontmost.
-- **Stats:**
-  - Screen Score from 0 to 100.
-  - Screen time, breaks taken and skipped, longest and typical stretch.
-  - A 7-day chart, top apps, and top websites (Safari and Chromium browsers, opt-in).
-- **Automations:** run a Shortcut or AppleScript when a break starts or ends. Control Breather with links: `breather://break`, `breather://pause?minutes=30`, `breather://resume`, `breather://skip-next`, `breather://profile?name=Deep%20Work`, `breather://stats`.
-- **Smart Pause.** Breaks wait during:
-  - calls (any app using the mic or camera)
-  - video playback, frontmost only or also in the background
-  - fullscreen games
-  - screen recording
-  - deep-focus apps you choose
-- **Smarter interruptions.**
-  - Waits for a pause in typing, but never more than a limit you set.
-  - Adds a grace period after a call or video ends.
-  - Counts time away (idle, lock or sleep) as a break, with Undo.
-- **Enforcement levels:**
-  - **Casual:** skip anytime.
-  - **Balanced:** skip unlocks after a few seconds.
-  - **Hardcore:** no skipping at all.
+- **Notch island.** Heads-ups grow out of the hardware notch, Dynamic Island–style, with Start now / +1 min / +5 min / Skip. Hover the notch for a quick dashboard. Displays without a notch get a floating pill.
+- **Full-screen breaks on every display** with eight themes, animated aurora backgrounds, your own photos, five timer styles, fonts, colours and a breathing guide.
+- **Smart Pause.** Breaks wait during calls (any app using the mic or camera), video, fullscreen games, screen recording and focus apps you choose — and until you stop typing.
+- **Time away counts.** Step away and that time is a break, with Undo.
+- **Skip difficulty** from Casual to Hardcore, snooze limits, skip-ahead limits, “End break” after part of the break.
+- **Schedule.** Long breaks, office hours, planned breaks (lunch!), and breaks of any length on demand.
+- **Reminders** to drink water, fix posture, blink, stand or stretch — counted on active screen time only.
+- **Profiles** (Everyday, Deep Work, Gentle…) that switch automatically by app.
+- **Stats.** A daily Screen Score, screen time, longest stretch, a seven-day view, top apps and (opt-in) websites.
+- **Automations.** Run Shortcuts, AppleScript or shell scripts when breaks start and end; control Breather with `breather://` links and global keyboard shortcuts.
+- **iPhone & Apple Watch** companions *(build from source for now)* — breaks on the Lock Screen and Dynamic Island, a tap on your wrist, stats on your phone.
 
-  Snooze limits, daily skip-in-advance limits, and an "End break" button after part of the break.
-- **Long breaks** every N short breaks, **office hours** per weekday (including past midnight), and **timed pauses** that remind you if you forget to resume.
-- **Global shortcuts.** By default, ⌃⌥⌘B starts a break, ⌃⌥⌘P pauses or resumes, and ⌃⌥⌘S skips the next break. During a break, press Esc twice to skip.
-- **Quiet by default.** It can run with no menu bar icon at all; open the app again to bring up Settings.
-- **Private.** No account, telemetry or network access. The core needs no privacy permissions. Website stats are opt-in, and macOS asks once per browser.
+## Privacy
 
-## Requirements
+No account, no analytics, no tracking. Breather's only network activity is a once-a-day check for new versions on GitHub (you can turn it off), and talking to your own paired iPhone. Stats live in `~/Library/Application Support/Breather` and never leave your Mac. The core needs no privacy permissions; website stats are opt-in and macOS asks once per browser.
 
-macOS 26 Tahoe or later, including macOS 27. Built for Apple silicon.
+## iPhone & Apple Watch
 
-## Build & run
+The companion apps live in [`Apps/`](Apps) and are built with Xcode. Apple doesn't allow sharing iPhone apps outside the App Store without a paid developer account, so for now you build them yourself — a free Apple ID works:
 
 ```bash
-scripts/build.sh --install --run   # builds Breather.app, copies it to /Applications, launches it
-swift test                         # engine and scheduling tests
+scripts/mobile.sh device <YOUR_TEAM_ID>   # installs on your connected iPhone (and its Watch)
 ```
 
-### Developer tools
+Apps installed with a free Apple ID need reinstalling every 7 days. Blocking apps on your iPhone during breaks (Screen Time) and Apple push are built in but switched off until the project has a paid developer account — see [docs/IPHONE.md](docs/IPHONE.md).
+
+## Build from source
+
+Requirements: macOS 26+, Xcode 26+.
+
+```bash
+git clone https://github.com/jals413/breather.git
+cd breather
+scripts/build.sh --install --run   # builds Breather.app, copies it to /Applications, launches it
+swift test                         # engine, scheduling, link and push-payload tests
+```
+
+| Command | What it does |
+|---|---|
+| `scripts/build.sh` | Builds `build/Breather.app` (`--install`, `--run`) |
+| `scripts/release.sh 1.2.3` | Universal release zip + DMG + checksums in `dist/` |
+| `scripts/mobile.sh sim` | Builds and runs the iPhone + Watch apps in the Simulator |
+| `xcodegen generate` | Regenerates `BreatherMobile.xcodeproj` from `project.yml` |
+
+Developer tools built into the app:
 
 ```bash
 B=build/Breather.app/Contents/MacOS/Breather
-$B --diagnose                  # print what every detector sees right now
-$B --render-snapshots <dir>    # PNGs of every island, popover, welcome and break state
-$B --render-icon <dir>         # AppIcon.iconset (then: iconutil -c icns <dir>)
-$B --animation-test <dir>      # records ~60fps frames of every notch open/close transition
+$B --diagnose                  # what every Smart Pause detector sees right now
+$B --render-snapshots <dir>    # PNGs of the notch, popover, themes and welcome screen
+$B --animation-test <dir>      # frame-by-frame recording of every notch transition
 ```
 
-## Project layout
+### Project layout
 
 | Path | What's there |
 |---|---|
-| `Sources/Breather/Engine` | `BreakEngine`, the pure, testable state machine (work → heads-up → hold → break), and the break log |
-| `Sources/Breather/Detect` | Activity, meeting, video, fullscreen and recording detectors. All are cheap system queries polled every 2 s |
-| `Sources/Breather/Model` | `Settings` (versioned and tolerant of missing keys) and office hours |
-| `Sources/Breather/UI/Notch` | Island geometry, shape, states and window |
-| `Sources/Breather/UI/Overlay` | Full-screen break windows |
-| `Sources/Breather/UI/Brand.swift` | Logo, icon artwork and palette. Re-brand from this one file |
-| `Tests/BreatherTests` | Engine and office-hours tests |
+| `Sources/Breather` | The Mac app: engine, detectors, notch, break screen, settings |
+| `Sources/BreatherKit` | Shared with iPhone & Watch: link protocol, design system, Live Activity model |
+| `Apps/` | iPhone app, Live Activity, notification extension, Watch app and complications |
+| `Tests/` | Engine, routines, link and push-payload tests |
+| `website/` | The project website (GitHub Pages) |
+| `packaging/` | Homebrew cask template |
+| `docs/` | Design notes, the iPhone plan, the LookAway comparison |
 
-## Brand
+## Contributing
 
-- **Mark:** an eyelid over a rising "sun" pupil on the horizon, with a breath ripple below. It means looking far away and breathing out.
-- **Palette:**
+Bug reports, ideas and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-  | Colour | Hex |
-  |---|---|
-  | Mint | `#66E8C2` |
-  | Teal | `#21B5B0` |
-  | Ocean | `#0D618C` |
-  | Night | `#081221` |
-  | Amber (heads-up) | `#FFB854` |
-  | Sky (on hold) | `#73C7FF` |
+## Licence
 
-- **Type:** SF Pro, with SF Pro Rounded for numerals.
+Breather is free software, released under the [GNU General Public License v3.0](LICENSE). You can use, study, share and change it; if you distribute a modified version, it must be under the same licence.
 
-## Before a public release
-
-These are deliberately left undecided for now:
-
-- **Licence.** None yet, so all rights are reserved until one is chosen.
-- **Bundle ID.** It's `com.jalthakor.breather`. Changing it resets saved settings, so pick the final one before shipping.
-- **Signing and notarisation.** You need a Developer ID certificate, then `codesign --options runtime` plus `notarytool`.
-- **Updates.** For example, Sparkle.
-- **Liquid Glass icon.** Optionally make an Icon Composer `.icon` version for macOS 26+.
-- **Undocumented system call.** `AppIdentity` uses `responsibility_get_pid_responsible_for_pid`, looked up at runtime with a fallback. It's fine outside the App Store, but would need replacing for an App Store build.
+Copyright © 2026 Jal Thakor.

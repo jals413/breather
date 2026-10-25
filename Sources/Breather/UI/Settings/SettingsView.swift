@@ -757,20 +757,46 @@ private struct AboutPane: View {
     let app: AppModel
 
     var body: some View {
+        @Bindable var store = app.store
         Form {
             Section {
                 VStack(spacing: 10) {
                     BreatherAppIcon().frame(width: 96, height: 96)
                     Text(Brand.name).font(.title.bold())
-                    Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
-                        .foregroundStyle(.secondary)
-                    Text("\(Brand.tagline)\nSmart break reminders that live in your notch. No accounts, no telemetry. Everything stays on this Mac.")
+                    Text("Version \(app.updates.currentVersion)").foregroundStyle(.secondary)
+                    Text("\(Brand.tagline)\nBreak reminders that live in your notch. Free and open source.")
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
             }
+
+            Section {
+                Toggle("Check for updates automatically", isOn: $store.settings.checkForUpdates)
+                HStack {
+                    Text(updateText)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if case .available(_, let page) = app.updates.status {
+                        Button("Get It") { NSWorkspace.shared.open(page) }
+                    }
+                    Button("Check Now") { Task { await app.updates.check() } }
+                        .disabled(app.updates.status == .checking)
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Once a day Breather asks GitHub for the latest version. That's its only internet connection; nothing about you is sent. Installed with Homebrew? `brew upgrade --cask breather` works too.")
+            }
+
+            Section {
+                Link("Website", destination: Brand.website)
+                Link("Source code on GitHub", destination: Brand.repository)
+                Link("Report a bug or suggest a feature", destination: Brand.newIssue)
+                LabeledContent("Licence", value: "GNU GPL v3.0")
+            }
+
             Section {
                 Button("Show Welcome Screen…") { app.showWelcome() }
                 Button("Show data folder in Finder") {
@@ -779,6 +805,16 @@ private struct AboutPane: View {
                 }
                 Button("Reset all settings", role: .destructive) { app.store.reset() }
             }
+        }
+    }
+
+    private var updateText: String {
+        switch app.updates.status {
+        case .idle: "Not checked yet"
+        case .checking: "Checking…"
+        case .upToDate: "Breather is up to date"
+        case .available(let version, _): "Breather \(version) is available"
+        case .failed: "Couldn't reach GitHub"
         }
     }
 }

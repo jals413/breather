@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Install help (“Breather can't be opened”)
+    url: https://jals413.github.io/breather/install.html
+    about: The one-time approval macOS asks for, step by step.

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install guide — Breather</title>
+  <meta name="description" content="How to install Breather and open it the first time on macOS: Homebrew, one-line install, or the DMG with a one-time Open Anyway.">
+  <meta name="theme-color" content="#081221">
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <nav class="top">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/img/icon-256.png" alt="">Breather</a>
+      <div class="links">
+        <a href="./#features">Features</a>
+        <a href="https://github.com/jals413/breather">GitHub</a>
+        <a class="btn btn-primary btn-small cta" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <section style="padding-top:64px">
+    <div class="wrap" style="max-width:860px">
+      <div class="eyebrow">Install guide</div>
+      <h2>Install Breather and open it the first time.</h2>
+      <p class="section-lead">Breather is free and open source. It isn't notarized by Apple — that needs a paid developer account — so macOS asks you to approve it once. Here are three ways in; the first two skip the prompt entirely.</p>
+
+      <h3 style="font-size:24px;margin:44px 0 12px">Option 1 · Homebrew <span class="mint" style="font-size:15px;font-weight:600">· easiest</span></h3>
+      <div class="code"><span class="prompt">$</span><code>brew install --cask jals413/tap/breather</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      <p class="note">Breather's tap clears macOS's download quarantine as it installs, so it opens straight away. Don't have Homebrew? <a href="https://brew.sh">brew.sh</a>.</p>
+
+      <h3 style="font-size:24px;margin:44px 0 12px">Option 2 · One line in Terminal</h3>
+      <div class="code"><span class="prompt">$</span><code>curl -fsSL https://jals413.github.io/breather/install.sh | bash</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      <p class="note">Downloads the latest release from GitHub, verifies its SHA-256 checksum, installs it to Applications, clears the quarantine and opens it. <a href="install.sh">Read the script</a>.</p>
+
+      <h3 style="font-size:24px;margin:44px 0 18px">Option 3 · Download the DMG</h3>
+      <div class="steps">
+        <div class="step">
+          <div>
+            <h3>Download and drag to Applications</h3>
+            <p>Get <a href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Breather.dmg</a>, open it, and drag Breather onto the Applications folder.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <h3>Open Breather — macOS stops it</h3>
+            <p>Double-click Breather in Applications. macOS shows a message like this one. Click <b>Done</b>.</p>
+            <div class="mac-window" style="max-width:340px">
+              <div class="body dialog">
+                <img src="assets/img/icon-256.png" alt="">
+                <h4>“Breather” Not Opened</h4>
+                <p>Apple could not verify “Breather” is free of malware that may harm your Mac or compromise your privacy.</p>
+                <div class="btns"><span class="def">Done</span><span>Move to Bin</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <h3>Open Privacy &amp; Security</h3>
+            <p>Open <b>System Settings</b> → <b>Privacy &amp; Security</b>, and scroll down to <b>Security</b>. You'll see a line about Breather — click <b>Open Anyway</b>. (It appears for about an hour after you tried to open the app.)</p>
+            <div class="mac-window">
+              <div class="bar"><i></i><i></i><i></i><span>Privacy &amp; Security</span></div>
+              <div class="body">
+                <div class="muted" style="font-weight:600;margin-bottom:8px">Security</div>
+                <div class="group">
+                  <div class="row">
+                    <span>“Breather” was blocked to protect your Mac.</span>
+                    <span class="mac-btn hl">Open Anyway</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <h3>Confirm</h3>
+            <p>Click <b>Open Anyway</b> once more and enter your Mac password (or use Touch ID). Breather opens — and macOS remembers your choice, so you won't be asked again, even after updates installed the same way.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:36px">
+        <h3 style="margin-top:0">Prefer Terminal?</h3>
+        <p style="margin-bottom:14px">This removes the download quarantine from Breather only — it doesn't change any security setting for other apps.</p>
+        <div class="code"><span class="prompt">$</span><code>xattr -dr com.apple.quarantine /Applications/Breather.app</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      </div>
+
+      <h3 style="font-size:24px;margin:56px 0 12px">After it opens</h3>
+      <p class="note" style="font-size:17px">Breather lives in your menu bar and your notch — there's no Dock icon. The welcome screen lets you pick a rhythm and turn on <b>Open at login</b>. macOS may ask for permissions later, only when you turn on the features that need them: Bluetooth and Local Network for the iPhone link, and Automation if you enable website stats.</p>
+
+      <h3 style="font-size:24px;margin:56px 0 12px">Troubleshooting</h3>
+      <details><summary>“Breather is damaged and can't be opened”</summary><p>That's macOS's quarantine message for apps that aren't notarized, not real damage. Run the Terminal command above, or reinstall with Homebrew or the one-line installer.</p></details>
+      <details><summary>I don't see “Open Anyway”</summary><p>Try opening Breather again first — the button only appears for about an hour after macOS blocks it. Still nothing? Use the Terminal command above.</p></details>
+      <details><summary>“Breather requires macOS 26 or later”</summary><p>Breather uses features introduced in macOS 26 Tahoe. Update in System Settings → General → Software Update.</p></details>
+      <details><summary>Is it safe to approve an app Apple didn't check?</summary><p>Only approve apps you trust. Breather's full source is on <a href="https://github.com/jals413/breather">GitHub</a>, every release is built there by GitHub Actions from the tagged code, and each release lists SHA-256 checksums so you can verify the download: <kbd>shasum -a 256 Breather.dmg</kbd>.</p></details>
+      <details><summary>How do I uninstall?</summary><p>Quit Breather from the menu bar and move it to the Bin. To also remove its data, delete <kbd>~/Library/Application Support/Breather</kbd> and <kbd>~/Library/Preferences/com.jalthakor.breather.plist</kbd>. With Homebrew: <kbd>brew uninstall --zap --cask breather</kbd>.</p></details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>Breather · Free software under the GPL-3.0</span>
+      <div class="links">
+        <a href="./">Home</a>
+        <a href="https://github.com/jals413/breather">GitHub</a>
+        <a href="https://github.com/jals413/breather/issues/new/choose">Get help</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+</body>
+</html>

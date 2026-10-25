@@ -49,6 +49,7 @@ final class AppModel {
     let notch = NotchModel()
     let usage = UsageTracker()
     let phone = PhoneLink()
+    let updates = UpdateChecker()
 
     @ObservationIgnored private let activity = ActivityMonitor()
     @ObservationIgnored private let smartPause = SmartPauseMonitor()
@@ -101,6 +102,11 @@ final class AppModel {
 
         registerHotKeys()
         LoginItem.sync(enabled: store.settings.launchAtLogin)
+        updates.onNewVersion = { [weak self] version, page in
+            self?.notch.show(NotchToast(symbol: "arrow.down.circle.fill", tint: Brand.mint, title: "Breather \(version) is available",
+                                        subtitle: "Update with Homebrew, or get it from GitHub.", action: .openURL(page),
+                                        actionTitle: "Get it"), for: 12)
+        }
         phone.onCommand = { [weak self] command in self?.handle(command) }
         phone.statsProvider = { [weak self] in
             guard let self else { return StatsSnapshot(score: 0, rhythmPoints: 0, breakPoints: 0, screenSeconds: 0, taken: 0, skipped: 0,
@@ -302,6 +308,7 @@ final class AppModel {
             engine.absorbUpcomingBreak(false)
         }
         nudgeIfOvertime(now: now)
+        if store.settings.checkForUpdates { updates.checkIfDue() }
         if store.settings.phoneLinkEnabled {
             phone.publish(phoneState(now: now))
             phone.publishStats()
@@ -528,6 +535,7 @@ final class AppModel {
             }
         case .skipPlanned: break
         case .breakNow: breakNow()
+        case .openURL(let url): NSWorkspace.shared.open(url)
         case .reminderLater(let id):
             let minutes = store.settings.reminders.first { $0.id == id }?.laterMinutes ?? 10
             routines.snooze(id, minutes: minutes, settings: store.settings)

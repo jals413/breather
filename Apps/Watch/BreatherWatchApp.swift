@@ -29,6 +29,16 @@ final class WatchModel: NSObject {
     private(set) var phoneReachable = false
 
     func activate() {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-BreatherDemo") || args.contains("-BreatherDemoBreak") {
+            // Sample data for screenshots; nothing connects.
+            var demo = args.contains("-BreatherDemoBreak") ? MacState.previewBreak : MacState.preview
+            if demo.mode == .onBreak { demo.breakEnd = .now.addingTimeInterval(17); demo.breakStart = .now.addingTimeInterval(-3) }
+            demo.detail = demo.mode == .onBreak ? "Short break" : "Break in 12 min"
+            state = demo
+            phoneReachable = true
+            return
+        }
         guard WCSession.isSupported() else { return }
         WCSession.default.delegate = self
         WCSession.default.activate()

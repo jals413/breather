@@ -1,5 +1,7 @@
 import CryptoKit
 import XCTest
+@testable import Breather
+typealias UpdateCheckerShim = UpdateChecker
 @testable import BreatherKit
 
 final class LinkTests: XCTestCase {
@@ -51,5 +53,15 @@ final class LinkTests: XCTestCase {
         XCTAssertFalse(b.differsMeaningfully(from: a))
         a.mode = .onBreak
         XCTAssertTrue(b.differsMeaningfully(from: a))
+    }
+}
+
+final class UpdateVersionTests: XCTestCase {
+    func testNumericComparison() {
+        XCTAssertTrue(UpdateCheckerShim.isNewer("0.10.0", than: "0.9.3"))
+        XCTAssertTrue(UpdateCheckerShim.isNewer("1.0", than: "0.9.9"))
+        XCTAssertFalse(UpdateCheckerShim.isNewer("0.9.0", than: "0.9.0"))
+        XCTAssertFalse(UpdateCheckerShim.isNewer("0.9", than: "0.9.0"))
+        XCTAssertFalse(UpdateCheckerShim.isNewer("0.8.9", than: "0.9.0"))
     }
 }

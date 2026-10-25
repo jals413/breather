@@ -100,7 +100,7 @@ enum AssetRenderer {
             let size = NotchLayout.size(for: content, notch: notch)
             let view = SnapshotIsland(app: app, content: content, notch: notch)
                 .frame(width: size.width + 2 * NotchLayout.shoulder + 80, height: size.height + 40, alignment: .top)
-                .background(Color(white: 0.85))
+                .background(CommandLine.arguments.contains("--transparent") ? Color.clear : Color(white: 0.85))
             write(view, scale: 2, to: dir.appendingPathComponent("island-\(name).png"))
         }
         write(BreatherAppIcon().frame(width: 512, height: 512), scale: 1, to: dir.appendingPathComponent("icon.png"))
@@ -149,8 +149,10 @@ private struct SnapshotIsland: View {
         .clipShape(shape)
         .overlay(alignment: .top) {
             // The hardware notch, outlined so the review shows where the camera sits.
-            RoundedRectangle(cornerRadius: 8).stroke(.red.opacity(0.5), lineWidth: 0.5)
-                .frame(width: notch.width, height: notch.height)
+            if !CommandLine.arguments.contains("--transparent") {
+                RoundedRectangle(cornerRadius: 8).stroke(.red.opacity(0.5), lineWidth: 0.5)
+                    .frame(width: notch.width, height: notch.height)
+            }
         }
         .foregroundStyle(.white)
     }

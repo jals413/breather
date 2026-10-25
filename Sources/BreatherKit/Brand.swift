@@ -5,6 +5,10 @@ import SwiftUI
 public enum Brand {
     public static let name = "Breather"
     public static let tagline = "Rest your eyes. Keep your flow."
+    public static let repository = URL(string: "https://github.com/jals413/breather")!
+    public static let website = URL(string: "https://jals413.github.io/breather/")!
+    public static let installGuide = URL(string: "https://jals413.github.io/breather/install.html")!
+    public static let newIssue = URL(string: "https://github.com/jals413/breather/issues/new/choose")!
 
     /// Core palette: a calm mint that warms into ocean blue.
     public static let mint = Color(red: 0.40, green: 0.91, blue: 0.76)        // #66E8C2
