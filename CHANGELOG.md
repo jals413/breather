@@ -2,7 +2,9 @@
 
 All notable changes to Breather. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-25
+
+Breather 1.0: updates itself, a guided setup and a refined set of break screens.
 
 ### Updates
 - "Update Now" in Settings › About and in the notch downloads the new version, checks its SHA-256 checksum and signature, swaps it in and reopens Breather.
