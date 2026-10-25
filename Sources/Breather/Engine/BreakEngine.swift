@@ -18,6 +18,8 @@ struct BreakSession: Equatable {
     var start: Date
     var duration: TimeInterval
     var message: String
+    /// Overrides the kind's title, e.g. "Lunch" for a planned break.
+    var title: String? = nil
     var end: Date { start.addingTimeInterval(duration) }
 
     func remaining(at now: Date) -> TimeInterval { max(0, end.timeIntervalSince(now)) }
@@ -287,11 +289,11 @@ final class BreakEngine {
 
     // MARK: Actions
 
-    func startBreak(kind: BreakKind? = nil, duration: TimeInterval? = nil, now: Date = .now) {
+    func startBreak(kind: BreakKind? = nil, duration: TimeInterval? = nil, title: String? = nil, message: String? = nil, now: Date = .now) {
         let kind = kind ?? nextBreakKind
         let length = duration ?? (kind == .long ? settings.longBreakSeconds : settings.breakSeconds)
         let messages = kind == .long ? settings.longBreakMessages : settings.shortBreakMessages
-        let session = BreakSession(kind: kind, start: now, duration: length, message: messages.randomElement() ?? "")
+        let session = BreakSession(kind: kind, start: now, duration: length, message: message ?? messages.randomElement() ?? "", title: title)
         holdStarted = nil
         phase = .onBreak(session)
         onEvent?(.breakStarted(session))

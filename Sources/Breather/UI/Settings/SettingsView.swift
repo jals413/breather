@@ -3,13 +3,18 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, breaks, notch, smartPause, schedule, shortcuts, about
+    case general, profiles, breaks, breakScreen, notch, smartPause, reminders, planned, schedule, privacy, shortcuts, about
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .general: "General"
+        case .profiles: "Profiles"
+        case .reminders: "Reminders"
+        case .planned: "Planned & Automations"
+        case .privacy: "Stats & Privacy"
         case .breaks: "Breaks"
+        case .breakScreen: "Break Screen"
         case .notch: "Notch & Alerts"
         case .smartPause: "Smart Pause"
         case .schedule: "Office Hours"
@@ -21,7 +26,12 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .profiles: "person.crop.square.filled.and.at.rectangle.fill"
+        case .reminders: "drop.fill"
+        case .planned: "calendar.badge.clock"
+        case .privacy: "chart.bar.xaxis"
         case .breaks: "eye.fill"
+        case .breakScreen: "paintbrush.fill"
         case .notch: "rectangle.topthird.inset.filled"
         case .smartPause: "brain.head.profile.fill"
         case .schedule: "calendar"
@@ -33,7 +43,12 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .general: .gray
+        case .profiles: .purple
+        case .reminders: .cyan
+        case .planned: .orange
+        case .privacy: .green
         case .breaks: Brand.teal
+        case .breakScreen: .pink
         case .notch: .black
         case .smartPause: .indigo
         case .schedule: .red
@@ -45,7 +60,12 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var summary: String {
         switch self {
         case .general: "Set your rhythm: how long you work and how long you rest."
-        case .breaks: "Choose how strict breaks are, and how they look and sound."
+        case .profiles: "Switch between saved setups, by hand or automatically by app."
+        case .reminders: "Gentle nudges between breaks: water, posture, blinking, standing up."
+        case .planned: "Breaks at fixed times, and Shortcuts that run when breaks start or end."
+        case .privacy: "See your screen habits. Everything is stored only on this Mac."
+        case .breaks: "Choose how strict breaks are, what they say, and how they sound."
+        case .breakScreen: "Make the full-screen break yours: background, timer, type and themes."
         case .notch: "Breather lives in your notch. Decide what it shows and when."
         case .smartPause: "Breaks wait while you're in a call, watching, presenting or mid-sentence."
         case .schedule: "Only get reminders during the hours you work."
@@ -111,7 +131,12 @@ struct SettingsView: View {
             Group {
                 switch pane {
                 case .general: GeneralPane(app: app)
+                case .profiles: ProfilesPane(app: app)
+                case .reminders: RemindersPane(app: app)
+                case .planned: PlannedPane(app: app)
+                case .privacy: PrivacyPane(app: app)
                 case .breaks: BreaksPane(app: app)
+                case .breakScreen: BreakScreenPane(app: app)
                 case .notch: NotchPane(app: app)
                 case .smartPause: SmartPausePane(app: app)
                 case .schedule: SchedulePane(app: app)
@@ -208,16 +233,6 @@ private struct BreaksPane: View {
                 Toggle("Lock the screen when a long break starts", isOn: $store.settings.lockScreenOnBreak)
             } header: {
                 Text("Enforcement")
-            }
-
-            Section("Look") {
-                Picker("Background", selection: $store.settings.background) {
-                    ForEach(BreakBackground.allCases) { Text($0.title).tag($0) }
-                }
-                HStack {
-                    Spacer()
-                    Button("Preview a 10-second break") { app.engine.startBreak(kind: .custom, duration: 10) }
-                }
             }
 
             Section {

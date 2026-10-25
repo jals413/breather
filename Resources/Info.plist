@@ -20,6 +20,19 @@
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>Breather commands</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>breather</string>
+            </array>
+        </dict>
+    </array>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Breather reads the address of your browser's front tab to show which websites you spend time on. This is optional and stays on your Mac.</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

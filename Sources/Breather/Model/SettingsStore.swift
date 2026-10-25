@@ -25,6 +25,11 @@ final class SettingsStore {
         } else {
             settings = Settings()
         }
+        if !defaults.bool(forKey: "profiles.seeded") {
+            defaults.set(true, forKey: "profiles.seeded")
+            if settings.profiles.isEmpty { settings.profiles = Profile.seeds() }
+            save()
+        }
     }
 
     func reset() { settings = Settings() }
@@ -58,7 +63,7 @@ extension Settings {
         read(\.lockScreenOnBreak, "lockScreenOnBreak")
         read(\.shortBreakMessages, "shortBreakMessages")
         read(\.longBreakMessages, "longBreakMessages")
-        read(\.background, "background")
+        read(\.appearance, "appearance")
         read(\.soundEnabled, "soundEnabled")
         read(\.breakStartSound, "breakStartSound")
         read(\.breakEndSound, "breakEndSound")
@@ -87,15 +92,49 @@ extension Settings {
         read(\.idleCountsAsBreak, "idleCountsAsBreak")
         read(\.idleThresholdSeconds, "idleThresholdSeconds")
         read(\.officeHours, "officeHours")
+        read(\.reminders, "reminders")
+        read(\.remindersPauseInCalls, "remindersPauseInCalls")
+        read(\.plannedBreaks, "plannedBreaks")
+        read(\.automations, "automations")
+        read(\.profiles, "profiles")
+        read(\.activeProfileID, "activeProfileID")
+        read(\.trackAppUsage, "trackAppUsage")
+        read(\.trackWebsites, "trackWebsites")
         read(\.launchAtLogin, "launchAtLogin")
         read(\.hotKeys, "hotKeys")
     }
 }
 
-private struct AnyKey: CodingKey {
+struct AnyKey: CodingKey {
     var stringValue: String
     var intValue: Int? { nil }
     init(_ string: String) { stringValue = string }
     init?(stringValue: String) { self.stringValue = stringValue }
     init?(intValue: Int) { nil }
+}
+
+/// Decodes keys one by one so adding a field never invalidates saved data.
+struct TolerantDecoder {
+    let container: KeyedDecodingContainer<AnyKey>
+    init(_ decoder: Decoder) throws { container = try decoder.container(keyedBy: AnyKey.self) }
+    func callAsFunction<Root, T: Decodable>(_ root: inout Root, _ keyPath: WritableKeyPath<Root, T>, _ name: String) {
+        if let value = try? container.decode(T.self, forKey: AnyKey(name)) { root[keyPath: keyPath] = value }
+    }
+}
+
+extension BreakAppearance {
+    init(from decoder: Decoder) throws {
+        self.init()
+        let read = try TolerantDecoder(decoder)
+        read(&self, \.background, "background"); read(&self, \.auroraPalette, "auroraPalette")
+        read(&self, \.animateBackground, "animateBackground"); read(&self, \.solidColor, "solidColor")
+        read(&self, \.gradientTop, "gradientTop"); read(&self, \.gradientBottom, "gradientBottom")
+        read(&self, \.imagePath, "imagePath"); read(&self, \.imageBlur, "imageBlur"); read(&self, \.dimming, "dimming")
+        read(&self, \.timerStyle, "timerStyle"); read(&self, \.timerDesign, "timerDesign"); read(&self, \.timerWeight, "timerWeight")
+        read(&self, \.timerScale, "timerScale"); read(&self, \.accent, "accent"); read(&self, \.textColor, "textColor")
+        read(&self, \.messageDesign, "messageDesign"); read(&self, \.messageWeight, "messageWeight")
+        read(&self, \.messageScale, "messageScale"); read(&self, \.showKindLabel, "showKindLabel")
+        read(&self, \.showMessage, "showMessage"); read(&self, \.showBreathingHalo, "showBreathingHalo")
+        read(&self, \.showBreathingCue, "showBreathingCue"); read(&self, \.showClock, "showClock"); read(&self, \.showHint, "showHint")
+    }
 }

@@ -43,6 +43,9 @@ enum AssetRenderer {
             ("toast", .toast(NotchToast(symbol: "figure.walk", tint: Brand.mint, title: "Welcome back",
                                         subtitle: "6 minutes away counted as a break", action: .undoNaturalBreak, actionTitle: "Undo"))),
             ("expanded", .expanded),
+            ("reminder", .toast(NotchToast(symbol: "drop.fill", tint: Color(red: 0.35, green: 0.72, blue: 1), title: "Drink water",
+                                           subtitle: "Have a few sips.", action: .reminderDone(UUID()), actionTitle: "Done",
+                                           secondaryAction: .reminderLater(UUID()), secondaryTitle: "Later"))),
         ]
         for (name, content) in states {
             let size = NotchLayout.size(for: content, notch: notch)
@@ -54,13 +57,17 @@ enum AssetRenderer {
         write(BreatherAppIcon().frame(width: 512, height: 512), scale: 1, to: dir.appendingPathComponent("icon.png"))
         write(MenuBarView(app: app).background(Color(white: 0.16)), scale: 2, to: dir.appendingPathComponent("menubar-popover.png"))
         write(WelcomeView(app: app) {}.background(Color(white: 0.12)), scale: 1, to: dir.appendingPathComponent("welcome.png"))
+        write(StatsView(app: app, scrolls: false).frame(width: 820, height: 900).background(Color(white: 0.12)), scale: 1, to: dir.appendingPathComponent("stats.png"))
 
         if let screen = NSScreen.main {
             app.engine.startBreak(kind: .short, now: .now)
-            for style in [BreakBackground.aurora, .wallpaper, .midnight] {
-                app.store.settings.background = style
-                let view = BreakOverlayView(app: app, screen: screen, isPrimary: true)
-                write(view, scale: 0.5, to: dir.appendingPathComponent("overlay-\(style.rawValue).png"))
+            guard case .onBreak(let session) = app.engine.phase else { return }
+            for theme in BreakTheme.all {
+                let view = BreakScreen(appearance: theme.appearance, session: session, now: session.start.addingTimeInterval(6),
+                                       skip: .skip, canSnooze: true, screen: screen)
+                    .frame(width: 864, height: 559)
+                let name = theme.id.lowercased().replacingOccurrences(of: " ", with: "-")
+                write(view, scale: 1, to: dir.appendingPathComponent("theme-\(name).png"))
             }
         }
         write(Image(nsImage: BrandImages.menuBarIcon()).resizable().frame(width: 80, height: 56).padding(10).background(.white),

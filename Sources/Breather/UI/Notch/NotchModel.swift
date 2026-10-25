@@ -2,7 +2,10 @@ import SwiftUI
 import Observation
 
 struct NotchToast: Equatable, Identifiable {
-    enum Action: Equatable { case undoNaturalBreak, resume }
+    enum Action: Equatable {
+        case undoNaturalBreak, resume
+        case reminderDone(UUID), reminderLater(UUID)
+    }
     var id = UUID()
     var symbol: String
     var tint: Color
@@ -10,6 +13,8 @@ struct NotchToast: Equatable, Identifiable {
     var subtitle: String?
     var action: Action?
     var actionTitle: String?
+    var secondaryAction: Action? = nil
+    var secondaryTitle: String? = nil
 }
 
 enum NotchContent: Equatable {
@@ -150,8 +155,10 @@ enum NotchLayout {
         case .peek: return CGSize(width: notch.width + 2 * earWidth, height: band)
         case .countdown: return CGSize(width: max(notch.width + 150, 340), height: band + 62)
         case .headsUp: return CGSize(width: max(notch.width + 200, 410), height: band + 104)
-        case .toast(let toast): return CGSize(width: max(notch.width + 170, toast.action == nil ? 360 : 410), height: band + 58)
-        case .expanded: return CGSize(width: max(notch.width + 270, 470), height: band + 178)
+        case .toast(let toast):
+            let width: CGFloat = toast.secondaryAction != nil ? 450 : toast.action != nil ? 410 : 360
+            return CGSize(width: max(notch.width + 170, width), height: band + 58)
+        case .expanded: return CGSize(width: max(notch.width + 270, 470), height: band + 158)
         }
     }
 

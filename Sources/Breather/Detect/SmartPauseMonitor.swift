@@ -5,6 +5,10 @@ import AppKit
 @MainActor
 final class SmartPauseMonitor {
     private(set) var reasons: [PauseReason] = []
+    /// When a capture process was first seen; screenshots run the same process for a moment,
+    /// so only capture that lasts counts as recording.
+    private var captureSeenSince: Date?
+    private let recordingMinimum: TimeInterval = 8
     private var lastPoll = Date.distantPast
     private let interval: TimeInterval = 2
 
@@ -58,7 +62,11 @@ final class SmartPauseMonitor {
         if s.pauseForScreenRecording {
             let names = AppIdentity.runningProcessNames()
             if ScreenRecordingDetector.isRecording(processNames: names, displayAwakeApps: awakeApps) {
-                result.append(.screenRecording)
+                let since = captureSeenSince ?? .now
+                captureSeenSince = since
+                if Date.now.timeIntervalSince(since) >= recordingMinimum { result.append(.screenRecording) }
+            } else {
+                captureSeenSince = nil
             }
         }
 

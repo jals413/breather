@@ -19,19 +19,6 @@ enum SkipDifficulty: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-enum BreakBackground: String, Codable, CaseIterable, Identifiable {
-    case aurora, frosted, wallpaper, midnight
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .aurora: "Aurora (animated)"
-        case .frosted: "Frosted glass"
-        case .wallpaper: "Blurred wallpaper"
-        case .midnight: "Midnight"
-        }
-    }
-}
-
 enum VideoPauseMode: String, Codable, CaseIterable, Identifiable {
     case off, frontmost, background
     var id: String { rawValue }
@@ -98,7 +85,7 @@ struct Settings: Codable, Equatable {
         "Take a short walk. The screen will wait.",
         "Step away and rest your eyes properly.",
     ]
-    var background: BreakBackground = .aurora
+    var appearance = BreakAppearance()
 
     // Sound
     var soundEnabled = true
@@ -145,6 +132,22 @@ struct Settings: Codable, Equatable {
 
     // Schedule
     var officeHours = OfficeHours()
+
+    // Routines
+    var reminders = Reminder.defaults
+    var remindersPauseInCalls = true
+    var plannedBreaks: [PlannedBreak] = [.lunch]
+    var automations = Automations()
+
+    // Profiles
+    /// Seeded with starter profiles on first launch (see SettingsStore).
+    var profiles: [Profile] = []
+    var activeProfileID: UUID?
+
+    // Stats
+    var trackAppUsage = true
+    /// Reads the front tab's address in Safari & Chromium browsers (asks for Automation permission).
+    var trackWebsites = false
 
     // System
     var launchAtLogin = false

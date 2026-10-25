@@ -314,8 +314,13 @@ struct ToastView: View {
                 }
             }
             Spacer(minLength: 8)
+            if let secondary = toast.secondaryAction {
+                IslandButton(title: toast.secondaryTitle ?? "Later", style: .subtle) { app.perform(secondary) }
+            }
             if let action = toast.action {
-                IslandButton(title: toast.actionTitle ?? "Undo") { app.perform(action) }
+                IslandButton(title: toast.actionTitle ?? "Undo", style: toast.secondaryAction != nil ? .primary : .normal) {
+                    app.perform(action)
+                }
             }
         }
         .padding(.horizontal, 18)
@@ -366,6 +371,7 @@ struct DashboardView: View {
                     app.engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
+                IslandTile(title: "Stats", symbol: "chart.bar.fill", tint: Brand.sky) { app.openStats() }
                 IslandTile(title: "Settings", symbol: "gearshape.fill", tint: .white) { app.openSettings() }
             }
         }
@@ -400,19 +406,19 @@ struct IslandTile: View {
             .opacity(isEnabled ? 1 : 0.4)
     }
 
+    /// Icon-only: the title becomes the tooltip and the VoiceOver label.
     var label: some View {
-        VStack(spacing: 6) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(active ? .black : tint)
-                .frame(width: 32, height: 32)
-                .background(Circle().fill(active ? tint : .white.opacity(0.12)))
-            Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.85))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 9)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(hovering ? 0.12 : 0.07)))
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        Image(systemName: symbol)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(active ? .black : tint)
+            .frame(width: 38, height: 38)
+            .background(Circle().fill(active ? tint : .white.opacity(0.12)))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(hovering ? 0.12 : 0.07)))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .help(title)
+            .accessibilityLabel(title)
     }
 }
 

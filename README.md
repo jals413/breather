@@ -10,7 +10,20 @@ Breather reminds you to look away from the screen (20-20-20 by default) without 
 ## Features
 
 - **Notch island.** Heads-ups grow out of the hardware notch, Dynamic Island–style, with Start now / +1 min / +5 min / Skip. Hover the notch to see your next break. Displays without a notch get a floating pill instead.
-- **Full-screen breaks on every display**, above fullscreen apps. Choose an animated aurora, frosted glass, blurred wallpaper or midnight background, with a breathing halo and your own messages.
+- **Full-screen breaks on every display**, above fullscreen apps, fully customisable:
+  - **8 themes:** Ocean Calm, Sunset, Forest, Lavender Breathe, Midnight Minimal, Paper, Terminal, Your Wallpaper.
+  - **Backgrounds:** animated aurora (6 palettes), gradient, solid colour, blurred wallpaper, your own photo, or a folder that rotates, plus blur and dim controls.
+  - **Timer:** ring, large digits, progress bar, dots or hidden. Choose the font (SF Pro, Rounded, New York, Mono), weight, size and accent colour.
+  - **Text and extras:** text colour, message font and size, and an optional "Breathe in / Breathe out" guide, clock and hints.
+  - A live preview in Settings.
+- **Reminders:** water, posture, blink, stand up, stretch, or your own. They appear in the notch with Done and Later, and count only time you're actually at your Mac.
+- **Planned breaks** at fixed times (like lunch). If you're in a call, they wait up to 45 minutes.
+- **Profiles** (Everyday, Deep Work, Gentle, or your own) save your rhythm, strictness and break look. Switch from the menu bar or the `breather://` scheme, or automatically when a chosen app is frontmost.
+- **Stats:**
+  - Screen Score from 0 to 100.
+  - Screen time, breaks taken and skipped, longest and typical stretch.
+  - A 7-day chart, top apps, and top websites (Safari and Chromium browsers, opt-in).
+- **Automations:** run a Shortcut or AppleScript when a break starts or ends. Control Breather with links: `breather://break`, `breather://pause?minutes=30`, `breather://resume`, `breather://skip-next`, `breather://profile?name=Deep%20Work`, `breather://stats`.
 - **Smart Pause.** Breaks wait during:
   - calls (any app using the mic or camera)
   - video playback, frontmost only or also in the background
@@ -30,7 +43,7 @@ Breather reminds you to look away from the screen (20-20-20 by default) without 
 - **Long breaks** every N short breaks, **office hours** per weekday (including past midnight), and **timed pauses** that remind you if you forget to resume.
 - **Global shortcuts.** By default, ⌃⌥⌘B starts a break, ⌃⌥⌘P pauses or resumes, and ⌃⌥⌘S skips the next break. During a break, press Esc twice to skip.
 - **Quiet by default.** It can run with no menu bar icon at all; open the app again to bring up Settings.
-- **Private.** No account, telemetry or network access. It needs no privacy permissions.
+- **Private.** No account, telemetry or network access. The core needs no privacy permissions. Website stats are opt-in, and macOS asks once per browser.
 
 ## Requirements
 

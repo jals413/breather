@@ -28,6 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        MainActor.assumeIsolated { urls.forEach { AppModel.shared.handle(url: $0) } }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated { AppModel.shared.saveState() }
     }

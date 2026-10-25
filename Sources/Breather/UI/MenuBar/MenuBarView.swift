@@ -50,6 +50,13 @@ struct MenuBarView: View {
             .padding(12)
             .background(Card())
 
+            if !app.store.settings.profiles.isEmpty {
+                ProfileRowMenu(app: app)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Card())
+            }
+
             if !isPaused {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Pause for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
@@ -67,6 +74,7 @@ struct MenuBarView: View {
             HStack {
                 Button("Restart timer") { engine.restartCycle() }
                 Spacer()
+                Button("Stats") { app.openStats() }
                 Button("Settings…") { app.openSettings() }
                     .keyboardShortcut(",")
                 Button("Quit") { NSApp.terminate(nil) }
@@ -170,5 +178,40 @@ private struct Chip: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+    }
+}
+
+private struct ProfileRowMenu: View {
+    let app: AppModel
+
+    var body: some View {
+        let active = app.activeProfile
+        Menu {
+            ForEach(app.store.settings.profiles) { profile in
+                Button {
+                    app.applyProfile(profile.id)
+                } label: {
+                    Label(profile.name, systemImage: profile.id == active?.id ? "checkmark" : profile.symbol)
+                }
+            }
+            Divider()
+            Button("Edit Profiles…") { app.openSettings() }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: active?.symbol ?? "slider.horizontal.3")
+                    .foregroundStyle(Brand.teal)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Profile").font(.caption).foregroundStyle(.secondary)
+                    Text(active?.name ?? "Custom").font(.callout.weight(.medium))
+                }
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
     }
 }

@@ -46,6 +46,7 @@ final class AppModel {
     let engine: BreakEngine
     let log = BreakLog()
     let notch = NotchModel()
+    let usage = UsageTracker()
 
     @ObservationIgnored private let activity = ActivityMonitor()
     @ObservationIgnored private let smartPause = SmartPauseMonitor()
@@ -58,6 +59,9 @@ final class AppModel {
     @ObservationIgnored private var lastSmartReasons: [PauseReason] = []
     @ObservationIgnored private let settingsWindow = SettingsWindowController()
     @ObservationIgnored private let welcome = WelcomeWindowController()
+    @ObservationIgnored let routines = RoutineScheduler()
+    @ObservationIgnored private let statsWindow = StatsWindowController()
+    @ObservationIgnored private var lastTickDate: Date?
 
     private static let snapshotKey = "engine.snapshot"
 
@@ -94,6 +98,14 @@ final class AppModel {
 
         registerHotKeys()
         LoginItem.sync(enabled: store.settings.launchAtLogin)
+        baseProfileID = store.settings.activeProfileID
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let id = app?.bundleIdentifier
+            MainActor.assumeIsolated { self?.frontmostAppChanged(id) }
+        }
 
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
@@ -118,6 +130,82 @@ final class AppModel {
         if let data = try? JSONEncoder().encode(engine.snapshot()) {
             UserDefaults.standard.set(data, forKey: Self.snapshotKey)
         }
+        usage.save()
+    }
+
+    // MARK: Profiles
+
+    @ObservationIgnored private var applyingProfile = false
+    /// The profile chosen by hand; app-triggered switches return to it.
+    @ObservationIgnored private var baseProfileID: UUID?
+    @ObservationIgnored private var autoSwitched = false
+
+    var activeProfile: Profile? {
+        store.settings.profiles.first { $0.id == store.settings.activeProfileID }
+    }
+
+    func applyProfile(_ id: UUID, manual: Bool = true) {
+        guard let profile = store.settings.profiles.first(where: { $0.id == id }) else { return }
+        applyingProfile = true
+        var s = store.settings
+        profile.values.apply(to: &s)
+        s.activeProfileID = id
+        store.settings = s
+        applyingProfile = false
+        if manual {
+            baseProfileID = id
+            autoSwitched = false
+        }
+        notch.show(NotchToast(symbol: profile.symbol, tint: Brand.mint, title: profile.name,
+                              subtitle: "Breaks every \(Format.compact(s.workSeconds)) · \(s.difficulty.title.lowercased())"), for: 3)
+    }
+
+    func saveCurrentAsProfile(named name: String) {
+        let profile = Profile(name: name, symbol: "bolt.fill", values: ProfileValues(from: store.settings))
+        store.settings.profiles.append(profile)
+        store.settings.activeProfileID = profile.id
+        baseProfileID = profile.id
+    }
+
+    private func frontmostAppChanged(_ bundleID: String?) {
+        guard let bundleID else { return }
+        let profiles = store.settings.profiles
+        if let match = profiles.first(where: { $0.triggerApps.contains { $0.bundleID == bundleID } }) {
+            if store.settings.activeProfileID != match.id {
+                if !autoSwitched { baseProfileID = store.settings.activeProfileID }
+                autoSwitched = true
+                applyProfile(match.id, manual: false)
+            }
+        } else if autoSwitched {
+            autoSwitched = false
+            if let base = baseProfileID { applyProfile(base, manual: false) }
+        }
+    }
+
+    // MARK: URL scheme
+
+    /// breather://break[?minutes=N], long-break, pause[?minutes=N], resume, skip-next,
+    /// profile?name=…, settings, stats
+    func handle(url: URL) {
+        guard url.scheme == "breather" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let minutes = items.first { $0.name == "minutes" }?.value.flatMap(Double.init)
+        switch url.host() ?? "" {
+        case "break": engine.startBreak(kind: minutes == nil ? nil : .custom, duration: minutes.map { $0 * 60 })
+        case "long-break": engine.startBreak(kind: .long)
+        case "pause":
+            engine.pause(for: minutes.map { $0 * 60 })
+        case "resume": resume()
+        case "skip-next": if !engine.skipNextPending { engine.toggleSkipNext() }
+        case "profile":
+            if let name = items.first(where: { $0.name == "name" })?.value,
+               let p = store.settings.profiles.first(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) {
+                applyProfile(p.id)
+            }
+        case "settings": openSettings()
+        case "stats": openStats()
+        default: break
+        }
     }
 
     // MARK: Tick
@@ -134,6 +222,11 @@ final class AppModel {
             signals.pauseReasons = smartPause.reasonsIfDue(now: now, settings: settings)
         }
         engine.tick(now: now, signals: signals)
+
+        let dt = lastTickDate.map { now.timeIntervalSince($0) } ?? 0
+        lastTickDate = now
+        for event in routines.tick(now: now, dt: dt, engine: engine) { handle(event) }
+        usage.tick(now: now, dt: dt, engine: engine, settings: settings)
 
         announceSmartPauseChanges(signals.pauseReasons)
         nagIfPausedTooLong(now: now)
@@ -182,9 +275,15 @@ final class AppModel {
             overlay?.show()
             if settings.soundEnabled { Sound.play(settings.breakStartSound, volume: settings.soundVolume) }
             if settings.lockScreenOnBreak && session.kind == .long { ActivityMonitor.lockScreen() }
+            if settings.automations.enabled {
+                AutomationRunner.run(shortcut: settings.automations.startShortcut, script: settings.automations.startScript)
+            }
 
         case .breakEnded(let session, let completed):
             overlay?.hide()
+            runEndAutomations()
+            // A snooze ends the overlay but not the work session.
+            if completed { usage.endSession(completed: true) }
             if completed {
                 log.append(BreakLogEntry(date: .now, outcome: .taken, kind: session.kind, seconds: session.duration))
                 if settings.soundEnabled { Sound.play(settings.breakEndSound, volume: settings.soundVolume) }
@@ -192,6 +291,8 @@ final class AppModel {
 
         case .breakSkipped(let kind, let inAdvance):
             overlay?.hide()
+            if !inAdvance { runEndAutomations() }
+            usage.recordSkip()
             log.append(BreakLogEntry(date: .now, outcome: inAdvance ? .skippedInAdvance : .skipped, kind: kind))
             if inAdvance {
                 notch.show(NotchToast(symbol: "forward.fill", tint: Brand.amber, title: "Skipped this break",
@@ -207,6 +308,8 @@ final class AppModel {
 
         case .naturalBreak(let away, let kind):
             log.append(BreakLogEntry(date: .now, outcome: .natural, kind: kind, seconds: away))
+            routines.didRest(for: away)
+            usage.endSession(completed: true)
             notch.show(NotchToast(symbol: "figure.walk", tint: .breatherMint, title: "Welcome back",
                                   subtitle: "\(Format.spoken(away)) away counted as a \(kind == .long ? "long " : "")break",
                                   action: .undoNaturalBreak, actionTitle: "Undo"), for: 10)
@@ -218,6 +321,31 @@ final class AppModel {
         notchController?.contentChanged()
     }
 
+    private func runEndAutomations() {
+        let a = store.settings.automations
+        if a.enabled { AutomationRunner.run(shortcut: a.endShortcut, script: a.endScript) }
+    }
+
+    private func handle(_ event: RoutineEvent) {
+        switch event {
+        case .remind(let reminder):
+            if let sound = reminder.sound, store.settings.soundEnabled { Sound.play(sound, volume: store.settings.soundVolume) }
+            notch.show(NotchToast(symbol: reminder.symbol, tint: reminder.tint.color, title: reminder.title,
+                                  subtitle: reminder.message, action: .reminderDone(reminder.id), actionTitle: "Done",
+                                  secondaryAction: .reminderLater(reminder.id), secondaryTitle: "Later"), for: 15)
+        case .plannedBreakSoon(let planned, let seconds):
+            notch.show(NotchToast(symbol: "calendar.badge.clock", tint: Brand.amber, title: "\(planned.title) in \(Format.compact(seconds))",
+                                  subtitle: Format.spoken(planned.durationMinutes * 60) + " break"), for: 8)
+        case .startPlannedBreak(let planned):
+            engine.startBreak(kind: .custom, duration: planned.durationMinutes * 60, title: planned.title,
+                              message: planned.message.isEmpty ? nil : planned.message)
+        case .plannedBreakMissed(let planned):
+            log.append(BreakLogEntry(date: .now, outcome: .skipped, kind: .custom))
+            notch.show(NotchToast(symbol: "calendar.badge.exclamationmark", tint: Brand.amber, title: "Missed \(planned.title.lowercased())",
+                                  subtitle: "You were busy. Take it when you can."), for: 8)
+        }
+    }
+
     private var snoozeSubtitle: String {
         let left = store.settings.snoozeLimitPerBreak - engine.snoozesThisCycle
         return left > 0 ? "\(left) snooze\(left == 1 ? "" : "s") left for this break" : "No snoozes left for this break"
@@ -225,6 +353,11 @@ final class AppModel {
 
     private func settingsChanged(old: Settings, new: Settings) {
         engine.settings = new
+        // Edits made while a profile is active are saved into that profile.
+        if !applyingProfile, let id = new.activeProfileID, ProfileValues(from: old) != ProfileValues(from: new),
+           let index = new.profiles.firstIndex(where: { $0.id == id }) {
+            store.settings.profiles[index].values = ProfileValues(from: new)
+        }
         smartPause.invalidate()
         if old.hotKeys != new.hotKeys { registerHotKeys() }
         if old.launchAtLogin != new.launchAtLogin { LoginItem.sync(enabled: new.launchAtLogin) }
@@ -280,6 +413,10 @@ final class AppModel {
         switch action {
         case .undoNaturalBreak: engine.undoNaturalBreak()
         case .resume: resume()
+        case .reminderDone(let id): routines.resetReminder(id)
+        case .reminderLater(let id):
+            let minutes = store.settings.reminders.first { $0.id == id }?.laterMinutes ?? 10
+            routines.snooze(id, minutes: minutes, settings: store.settings)
         }
         notch.dismissToast()
     }
@@ -287,6 +424,11 @@ final class AppModel {
     func openSettings() {
         notch.isHovering = false
         settingsWindow.show(app: self)
+    }
+
+    func openStats() {
+        notch.isHovering = false
+        statsWindow.show(app: self)
     }
 
     func skipState(now: Date) -> SkipState {
