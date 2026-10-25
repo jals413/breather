@@ -21,7 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         MainActor.assumeIsolated {
             AssetRenderer.handleCommandLine()
-            if CommandLine.arguments.contains("--render-settings") || CommandLine.arguments.contains("--render-stats") { return }
+            if CommandLine.arguments.contains("--render-settings") || CommandLine.arguments.contains("--render-stats")
+                || CommandLine.arguments.contains("--render-welcome") { return }
             if CommandLine.arguments.contains("--diagnose") {
                 Diagnostics.printAndExit()
             }

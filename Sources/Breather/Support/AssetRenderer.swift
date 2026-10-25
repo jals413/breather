@@ -33,13 +33,24 @@ enum AssetRenderer {
             renderSettings(to: URL(fileURLWithPath: args[i + 1]))
             return
         }
+        if let i = args.firstIndex(of: "--render-welcome"), i + 2 < args.count,
+           let step = Int(args[i + 2]).flatMap(WelcomeView.Step.init(rawValue:)) {
+            renderWindow(WelcomeView(app: AppModel.shared, onDone: {}, step: step), size: NSSize(width: 620, height: 720),
+                         to: URL(fileURLWithPath: args[i + 1]))
+            return
+        }
         if let i = args.firstIndex(of: "--render-stats"), i + 1 < args.count {
             renderWindow(StatsView(app: AppModel.shared), to: URL(fileURLWithPath: args[i + 1]))
             return
         }
         if let i = args.firstIndex(of: "--render-social"), i + 1 < args.count {
             AppModel.shared.prepareForSnapshots()
-            write(SocialCard(app: AppModel.shared).frame(width: 1200, height: 630), scale: 1, to: URL(fileURLWithPath: args[i + 1]))
+            // Open Graph card at 2× (2400×1260); with a second path, GitHub's 1280×640 card at 2× too.
+            write(SocialCard(app: AppModel.shared), scale: 2, to: URL(fileURLWithPath: args[i + 1]))
+            if i + 2 < args.count, !args[i + 2].hasPrefix("-") {
+                write(SocialCard(app: AppModel.shared, size: CGSize(width: 1280, height: 640)), scale: 2,
+                      to: URL(fileURLWithPath: args[i + 2]))
+            }
             exit(0)
         }
         if let i = args.firstIndex(of: "--render-snapshots"), i + 1 < args.count {
@@ -53,11 +64,11 @@ enum AssetRenderer {
         renderWindow(SettingsView(app: AppModel.shared), to: url)
     }
 
-    static func renderWindow(_ root: some View, to url: URL) {
+    static func renderWindow(_ root: some View, size: NSSize = NSSize(width: 760, height: 560), to url: URL) {
         let window = NSWindow(contentViewController: NSHostingController(rootView: root))
         window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
-        window.setContentSize(NSSize(width: 760, height: 560))
+        window.setContentSize(size)
         window.center()
         window.orderFrontRegardless()
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -199,46 +210,137 @@ private struct SnapshotContent: View {
 /// The 1200×630 link preview used by the website and GitHub (Open Graph / X cards).
 private struct SocialCard: View {
     let app: AppModel
+    var size = CGSize(width: 1200, height: 630)
 
     var body: some View {
-        let notch = CGSize(width: 185, height: 32)
-        ZStack {
-            AuroraBackground(animated: false)
-            LinearGradient(colors: [.clear, Brand.night.opacity(0.75)], startPoint: .top, endPoint: .bottom)
-            VStack(spacing: 0) {
-                SnapshotIsland(app: app, content: .headsUp(.short), notch: notch)
-                Spacer()
-            }
-            VStack(spacing: 18) {
-                Spacer().frame(height: 178)
-                HStack(spacing: 22) {
-                    BreatherAppIcon().frame(width: 128, height: 128)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Breather").font(.system(size: 76, weight: .bold, design: .default)).foregroundStyle(.white)
-                        Text("Rest your eyes. Keep your flow.")
-                            .font(.system(size: 34, weight: .semibold))
-                            .foregroundStyle(LinearGradient(colors: [Brand.mint, Brand.sky], startPoint: .leading, endPoint: .trailing))
-                    }
+        ZStack(alignment: .topLeading) {
+            // Background: night, with the brand aurora glowing from behind the screen.
+            Brand.night
+            RadialGradient(colors: [Brand.teal.opacity(0.45), .clear], center: UnitPoint(x: 0.78, y: 0.15),
+                           startRadius: 0, endRadius: 560)
+            RadialGradient(colors: [Color(red: 0.32, green: 0.22, blue: 0.62).opacity(0.35), .clear],
+                           center: UnitPoint(x: 0.08, y: 1.0), startRadius: 0, endRadius: 520)
+
+            screen
+                .frame(width: 520, height: size.height)
+                .offset(x: size.width - 520 - 56, y: 64)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 14) {
+                    BreatherAppIcon().frame(width: 60, height: 60)
+                    Text("Breather").font(.system(size: 34, weight: .bold)).foregroundStyle(.white)
                 }
-                Text("Break reminders that live in your MacBook's notch.")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.75))
+                Spacer().frame(height: 46)
+                Text("Rest your eyes.")
+                    .font(.system(size: 62, weight: .bold)).tracking(-1.6).foregroundStyle(.white)
+                Text("Keep your flow.")
+                    .font(.system(size: 62, weight: .bold)).tracking(-1.6)
+                    .foregroundStyle(LinearGradient(colors: [Brand.mint, Brand.teal, Brand.sky], startPoint: .leading, endPoint: .trailing))
+                Spacer().frame(height: 22)
+                Text("Break reminders that grow out of\nyour MacBook's notch.")
+                    .font(.system(size: 25, weight: .medium)).lineSpacing(4)
+                    .foregroundStyle(.white.opacity(0.7))
+                Spacer()
                 HStack(spacing: 10) {
-                    Circle().fill(Brand.mint).frame(width: 9, height: 9)
-                    Text("Free and open source").font(.system(size: 22, weight: .semibold))
-                    Text("·").foregroundStyle(.white.opacity(0.4))
-                    Text("macOS 26+").font(.system(size: 22, weight: .semibold))
+                    Chip(text: "Free & open source", dot: true)
+                    Chip(text: "macOS 26+")
+                    Chip(text: "GPL-3.0")
                 }
-                .foregroundStyle(Brand.mint)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Capsule().fill(Brand.mint.opacity(0.12)))
-                .overlay(Capsule().strokeBorder(Brand.mint.opacity(0.35)))
-                .padding(.top, 6)
-                Spacer()
             }
+            .padding(.leading, 72)
+            .padding(.vertical, 64)
+            .frame(width: 640, height: size.height, alignment: .topLeading)
         }
-        .frame(width: 1200, height: 630)
+        .frame(width: size.width, height: size.height)
         .clipped()
+    }
+
+    /// The top of a MacBook display with the island grown out of its notch.
+    private var screen: some View {
+        let notch = CGSize(width: 150, height: 30)
+        return ZStack(alignment: .top) {
+            AuroraBackground(animated: false)
+            LinearGradient(colors: [.clear, Brand.night.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+            // A window you're working in, behind the island.
+            CodeWindow()
+                .frame(width: 400, height: 330)
+                .padding(.top, 160)
+            // Menu bar.
+            HStack(spacing: 14) {
+                Image(systemName: "apple.logo").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Text("9:41").font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .padding(.horizontal, 16)
+            .frame(height: 30)
+            .background(.black.opacity(0.18))
+            SnapshotIsland(app: app, content: .headsUp(.short), notch: notch)
+                .scaleEffect(0.95, anchor: .top)
+        }
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20, style: .continuous))
+        .padding(10)
+        .background(
+            UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30, style: .continuous)
+                .fill(Color(white: 0.06))
+                .overlay(UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30, style: .continuous)
+                    .strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        )
+        .shadow(color: .black.opacity(0.55), radius: 40, y: 20)
+    }
+}
+
+private struct CodeWindow: View {
+    var body: some View {
+        let lines: [[(Color, CGFloat)]] = [
+            [(.pink, 50), (.cyan, 90), (.white, 40)],
+            [(.pink, 30), (.white, 110)],
+            [],
+            [(.pink, 30), (.white, 50), (.pink, 40), (.cyan, 40)],
+            [(.cyan, 60), (.white, 30), (.yellow, 16)],
+            [(.white, 140)],
+            [(.white, 90), (.yellow, 16)],
+        ]
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18),
+                         Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) { Circle().fill($0).frame(width: 10, height: 10) }
+            }
+            .padding(.horizontal, 14).frame(height: 32)
+            VStack(alignment: .leading, spacing: 13) {
+                ForEach(lines.indices, id: \.self) { i in
+                    HStack(spacing: 8) {
+                        ForEach(lines[i].indices, id: \.self) { j in
+                            Capsule().fill(lines[i][j].0.opacity(0.55)).frame(width: lines[i][j].1, height: 8)
+                        }
+                    }
+                    .padding(.leading, i == 0 || i == 3 ? 0 : 22)
+                    .frame(height: 8)
+                }
+            }
+            .padding(20)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(red: 0.09, green: 0.1, blue: 0.12).opacity(0.94)))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(.white.opacity(0.08)))
+        .shadow(color: .black.opacity(0.4), radius: 24, y: 12)
+    }
+}
+
+private struct Chip: View {
+    var text: String
+    var dot = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if dot { Circle().fill(Brand.mint).frame(width: 8, height: 8).shadow(color: Brand.mint, radius: 4) }
+            Text(text).font(.system(size: 18, weight: .semibold))
+        }
+        .foregroundStyle(dot ? Brand.mint : .white.opacity(0.85))
+        .padding(.horizontal, 16)
+        .frame(height: 40)
+        .background(Capsule().fill(dot ? Brand.mint.opacity(0.12) : .white.opacity(0.07)))
+        .overlay(Capsule().strokeBorder(dot ? Brand.mint.opacity(0.35) : .white.opacity(0.12)))
     }
 }

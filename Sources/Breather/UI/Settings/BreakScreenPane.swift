@@ -99,10 +99,10 @@ struct BreakScreenPane: View {
     }
 }
 
-private let sampleSession = BreakSession(kind: .short, start: .now, duration: 20, message: "Look at something 20 feet away.")
+let sampleSession = BreakSession(kind: .short, start: .now, duration: 20, message: "Look at something 20 feet away.")
 
 /// The real break screen, scaled down and ticking.
-private struct LivePreview: View {
+struct LivePreview: View {
     var appearance: BreakAppearance
     @State private var start = Date()
 
@@ -121,7 +121,7 @@ private struct LivePreview: View {
     }
 }
 
-private struct ThemeCard: View {
+struct ThemeCard: View {
     var theme: BreakTheme
     var selected: Bool
     var action: () -> Void

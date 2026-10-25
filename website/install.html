@@ -18,8 +18,8 @@
   <meta property="og:description" content="Install Breather with Homebrew, one line in Terminal, or the DMG, and open it the first time with a one-time Open Anyway.">
   <meta property="og:url" content="https://jals413.github.io/breather/install.html">
   <meta property="og:image" content="https://jals413.github.io/breather/assets/img/social.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
   <meta property="og:image:alt" content="Breather: break reminders that grow out of your MacBook's notch. Free and open source.">
   <meta property="og:locale" content="en_US">
 
@@ -33,33 +33,39 @@
   <link rel="icon" type="image/png" sizes="64x64" href="assets/img/favicon.png">
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
   <link rel="stylesheet" href="assets/style.css">
+  <!-- Visitor counts: GoatCounter (open source, no cookies, no personal data). -->
+  <script data-goatcounter="https://breather.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
   <div class="aurora" aria-hidden="true"></div>
 
   <nav class="top">
-    <div class="wrap">
-      <a class="brand" href="./"><img src="assets/img/icon-256.png" alt="">Breather</a>
+    <div class="nav-pill">
+      <a class="brand" href="./"><img src="assets/img/icon-256.png" alt=""><span>Breather</span></a>
       <div class="links">
-        <a href="./#features">Features</a>
-        <a href="https://github.com/jals413/breather">GitHub</a>
-        <a class="btn btn-primary btn-small cta" href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Download</a>
+        <a href="./#features" class="nav-features">Features</a>
+        <a href="./#faq">FAQ</a>
+        <a href="https://github.com/jals413/breather" class="gh" data-goatcounter-click="nav-github">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a class="btn btn-primary btn-small" href="./#get" data-goatcounter-click="nav-download">Download</a>
       </div>
     </div>
   </nav>
 
-  <section style="padding-top:64px">
+  <section class="page-top">
     <div class="wrap" style="max-width:860px">
       <div class="eyebrow">Install guide</div>
       <h2>Install Breather and open it the first time.</h2>
       <p class="section-lead">Breather is free and open source. Because it isn't notarized by Apple (that needs a paid developer account), macOS asks you to approve it once. Here are three ways to install it. The first two skip that step entirely.</p>
 
       <h3 style="font-size:24px;margin:44px 0 12px">Option 1 · Homebrew <span class="mint" style="font-size:15px;font-weight:600">· easiest</span></h3>
-      <div class="code"><span class="prompt">$</span><code>brew install --cask jals413/tap/breather</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      <div class="code"><span class="prompt">$</span><code>brew install --cask jals413/tap/breather</code><button class="btn btn-glass btn-small copy" data-event="copy-brew-guide">Copy</button></div>
       <p class="note">Breather's tap clears macOS's download quarantine as it installs, so it opens straight away. Don't have Homebrew? <a href="https://brew.sh">brew.sh</a>.</p>
 
       <h3 style="font-size:24px;margin:44px 0 12px">Option 2 · One line in Terminal</h3>
-      <div class="code"><span class="prompt">$</span><code>curl -fsSL https://jals413.github.io/breather/install.sh | bash</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+      <div class="code"><span class="prompt">$</span><code>curl -fsSL https://jals413.github.io/breather/install.sh | bash</code><button class="btn btn-glass btn-small copy" data-event="copy-curl">Copy</button></div>
       <p class="note">Downloads the latest release from GitHub, verifies its SHA-256 checksum, installs it to Applications, clears the quarantine and opens it. <a href="install.sh">Read the script</a>.</p>
 
       <h3 style="font-size:24px;margin:44px 0 18px">Option 3 · Download the DMG</h3>
@@ -67,7 +73,7 @@
         <div class="step">
           <div>
             <h3>Download and drag to Applications</h3>
-            <p>Get <a href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg">Breather.dmg</a>, open it, and drag Breather onto the Applications folder.</p>
+            <p>Get <a href="https://github.com/jals413/breather/releases/latest/download/Breather.dmg" data-goatcounter-click="download-dmg-guide">Breather.dmg</a>, open it, and drag Breather onto the Applications folder.</p>
           </div>
         </div>
 
@@ -116,21 +122,13 @@
       <div class="card" style="margin-top:36px">
         <h3 style="margin-top:0">Prefer Terminal?</h3>
         <p style="margin-bottom:14px">This removes the download quarantine from Breather only. It doesn't change security settings for any other app.</p>
-        <div class="code"><span class="prompt">$</span><code>xattr -dr com.apple.quarantine /Applications/Breather.app</code><button class="btn btn-glass btn-small copy">Copy</button></div>
+        <div class="code"><span class="prompt">$</span><code>xattr -dr com.apple.quarantine /Applications/Breather.app</code><button class="btn btn-glass btn-small copy" data-event="copy-xattr">Copy</button></div>
       </div>
 
       <h3 style="font-size:24px;margin:56px 0 12px">After it opens</h3>
       <p class="note" style="font-size:17px">Breather lives in your menu bar and your notch, so there's no Dock icon. The welcome screen lets you pick a rhythm and turn on <b>Open at login</b>. macOS may ask for permissions later, only when you turn on the features that need them: Bluetooth and Local Network for the iPhone link, and Automation if you enable website stats.</p>
 
-      <h3 style="font-size:24px;margin:56px 0 12px">Questions</h3>
-      <details><summary>Is Breather really free?</summary><p>Yes. It's free and open source under the GNU GPL v3.0, with no trials, subscriptions or accounts.</p></details>
-      <details><summary>Which Macs does it run on?</summary><p>Any Mac running macOS 26 Tahoe or later, including macOS 27, on Apple silicon or Intel. On Macs without a notch, alerts appear as a floating pill under the menu bar.</p></details>
-      <details><summary>How do I update?</summary><p>Breather tells you in the notch when a new version is out. With Homebrew, run <kbd>brew upgrade --cask breather</kbd>. Otherwise run the one-line installer again or download the new DMG.</p></details>
-      <details><summary>“Breather is damaged and can't be opened”</summary><p>That's macOS's quarantine message for apps that aren't notarized, not real damage. Run the Terminal command above, or reinstall with Homebrew or the one-line installer.</p></details>
-      <details><summary>I don't see “Open Anyway”</summary><p>Try opening Breather again first. The button only appears for about an hour after macOS blocks it. Still nothing? Use the Terminal command above.</p></details>
-      <details><summary>“Breather requires macOS 26 or later”</summary><p>Breather uses features introduced in macOS 26 Tahoe. Update in System Settings → General → Software Update.</p></details>
-      <details><summary>Is it safe to approve an app Apple didn't check?</summary><p>Only approve apps you trust. Breather's full source is on <a href="https://github.com/jals413/breather">GitHub</a>, every release is built there by GitHub Actions from the tagged code, and each release lists SHA-256 checksums so you can verify the download: <kbd>shasum -a 256 Breather.dmg</kbd>.</p></details>
-      <details><summary>How do I uninstall?</summary><p>Quit Breather from the menu bar and move it to the Bin. To also remove its data, delete <kbd>~/Library/Application Support/Breather</kbd> and <kbd>~/Library/Preferences/com.jalthakor.breather.plist</kbd>. With Homebrew: <kbd>brew uninstall --zap --cask breather</kbd>.</p></details>
+      <p class="note" style="font-size:17px;margin-top:40px">More questions? <a href="./#faq">Read the FAQ</a>.</p>
     </div>
   </section>
 
@@ -142,6 +140,7 @@
         <a href="https://github.com/jals413/breather">GitHub</a>
         <a href="https://github.com/jals413/breather/issues/new/choose">Get help</a>
       </div>
+      <p class="privacy">This site counts visits with <a href="https://www.goatcounter.com">GoatCounter</a>. No cookies, no personal data.</p>
     </div>
   </footer>
 
