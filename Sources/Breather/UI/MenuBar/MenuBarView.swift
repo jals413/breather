@@ -47,49 +47,57 @@ struct MenuBarView: View {
                         .font(BrandStyle.numeral(14))
                         .contentTransition(.numericText(countsDown: true))
                 }
-                .frame(width: 66, height: 66)
+                .frame(width: 62, height: 62)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(app.statusTitle).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                     Text(app.statusSubtitle).font(.system(size: 12)).foregroundStyle(BrandStyle.secondaryText).lineLimit(2)
                 }
                 Spacer(minLength: 0)
-                BrandStat("\(app.log.takenToday)", label: "today", tint: Brand.mint).fixedSize()
             }
             .brandCard(padding: 14)
 
+            // Icon-only, like the notch. Names show as tooltips; durations live in the tiles' menus.
             HStack(spacing: 8) {
                 ActionTile("Break now", symbol: "eye.fill") { app.breakNow() }
                     .disabled(engine.isOnBreak)
-                ActionTile(isPaused ? "Resume" : "Pause", symbol: isPaused ? "play.fill" : "pause.fill",
-                           tint: .white, active: isPaused) { app.togglePause() }
-                ActionTile("Skip next", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
+                if isPaused {
+                    ActionTile("Resume", symbol: "play.fill", tint: .white, active: true) { app.resume() }
+                } else {
+                    TileMenu(title: "Pause", symbol: "pause.fill", tint: .white) {
+                        ForEach(PauseOption.all) { option in
+                            Button(option.title) { app.pause(option) }
+                        }
+                    }
+                }
+                ActionTile("Skip next break", symbol: "forward.end.fill", tint: Brand.amber, active: engine.skipNextPending) {
                     engine.toggleSkipNext()
                 }
                 .disabled(!engine.canSkipInAdvance && !engine.skipNextPending)
-                ActionTile("Long break", symbol: "figure.walk", tint: Brand.sky) { engine.startBreak(kind: .long) }
-                    .disabled(engine.isOnBreak)
-            }
-
-            if !engine.isOnBreak {
-                PillRow(title: "Take a break for", options: [1, 5, 10, 15].map { ("\($0) min", Double($0)) }) { app.customBreak(minutes: $0) }
-            }
-            if !isPaused {
-                PillRow(title: "Pause for", options: PauseOption.all.prefix(4).enumerated().map { ($1.shortTitle, Double($0)) }) {
-                    app.pause(PauseOption.all[Int($0)])
+                TileMenu(title: "Take a break for…", symbol: "cup.and.saucer.fill", tint: Brand.sky) {
+                    ForEach([1.0, 5, 10, 15], id: \.self) { minutes in
+                        Button("\(Int(minutes)) minutes") { app.customBreak(minutes: minutes) }
+                    }
+                    Divider()
+                    Button("Long break") { engine.startBreak(kind: .long) }
                 }
+                .disabled(engine.isOnBreak)
             }
+            .actionTileTitles(false)
 
             HStack(spacing: 6) {
-                PillButton("Stats", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
-                PillButton("Settings", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
+                PillButton("", symbol: "chart.bar.fill", style: .subtle) { app.openStats() }
+                    .help("Stats")
+                PillButton("", symbol: "gearshape.fill", style: .subtle) { app.openSettings() }
+                    .help("Settings")
                     .keyboardShortcut(",")
                 Spacer()
-                PillButton("Quit", style: .subtle) { NSApp.terminate(nil) }
+                PillButton("", symbol: "power", style: .subtle) { NSApp.terminate(nil) }
+                    .help("Quit Breather")
                     .keyboardShortcut("q")
             }
         }
         .padding(14)
-        .frame(width: 340)
+        .frame(width: 300)
         .foregroundStyle(.white)
         .background(NightBackground())
         .environment(\.colorScheme, .dark)
@@ -101,21 +109,23 @@ struct MenuBarView: View {
     }
 }
 
-/// A labelled row of small pill buttons.
-private struct PillRow: View {
+/// A tile that opens a menu (pause durations, break lengths).
+private struct TileMenu<Items: View>: View {
     var title: String
-    var options: [(String, Double)]
-    var action: (Double) -> Void
+    var symbol: String
+    var tint: Color
+    @ViewBuilder var items: Items
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            BrandSectionLabel(title)
-            HStack(spacing: 6) {
-                ForEach(options, id: \.0) { option in
-                    PillButton(option.0, style: .normal, stretch: true) { action(option.1) }
-                }
-            }
+        Menu {
+            items
+        } label: {
+            ActionTile(title, symbol: symbol, tint: tint) {}.label
         }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .help(title)
     }
 }
 
