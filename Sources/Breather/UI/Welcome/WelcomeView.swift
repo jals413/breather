@@ -1,14 +1,14 @@
 import AppKit
 import SwiftUI
 
-/// First-run setup, in the same sidebar-and-cards layout as Settings and Stats.
+/// First-run setup: one step at a time, each built from the same header and grouped cards as Settings.
 /// Every choice is a real setting, applied as you go, so most people never need Settings.
 struct WelcomeView: View {
     let app: AppModel
     var onDone: () -> Void
     @State var step: Step = .hello
 
-    enum Step: Int, CaseIterable, SidebarItem {
+    enum Step: Int, CaseIterable, Identifiable {
         case hello, rhythm, breaks, look, notch, done
 
         var id: Int { rawValue }
@@ -55,47 +55,58 @@ struct WelcomeView: View {
     }
 
     var body: some View {
-        SidebarWindow(selection: $step, groups: [SidebarGroup(title: "Set Up", items: Step.allCases)]) {
-            VStack(spacing: 0) {
-                Group {
-                    switch step {
-                    case .hello: HelloPane()
-                    case .rhythm: RhythmPane(app: app)
-                    case .breaks: BreaksPane(app: app)
-                    case .look: LookPane(app: app)
-                    case .notch: NotchPane(app: app)
-                    case .done: DonePane(app: app)
-                    }
+        VStack(spacing: 0) {
+            Group {
+                switch step {
+                case .hello: HelloPane()
+                case .rhythm: RhythmPane(app: app)
+                case .breaks: BreaksPane(app: app)
+                case .look: LookPane(app: app)
+                case .notch: NotchPane(app: app)
+                case .done: DonePane(app: app)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .id(step)
-                footer
             }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: 24)),
+                                    removal: .opacity.combined(with: .offset(x: -24))))
+            .id(step)
+            footer
         }
-        .frame(width: 820, height: 640)
+        .padding(.top, 22)      // clears the window's traffic lights
+        .ignoresSafeArea(.container, edges: .top)
+        .frame(width: 640, height: 720)
+        .animation(.smooth(duration: 0.35), value: step)
     }
 
     private var footer: some View {
-        HStack(spacing: 10) {
-            Text("Step \(step.rawValue + 1) of \(Step.allCases.count)")
-                .font(.callout).foregroundStyle(.secondary)
+        HStack {
+            Button("Back") { move(-1) }
+                .controlSize(.large)
+                .opacity(step == .hello ? 0 : 1)
+                .disabled(step == .hello)
             Spacer()
-            if step != .hello {
-                Button("Back") { move(-1) }.controlSize(.large)
+            HStack(spacing: 7) {
+                ForEach(Step.allCases) { s in
+                    Capsule()
+                        .fill(s == step ? Brand.teal : Color.secondary.opacity(0.3))
+                        .frame(width: s == step ? 18 : 7, height: 7)
+                }
             }
+            Spacer()
             Button {
                 if step == .done { onDone() } else { move(1) }
             } label: {
-                Text(primaryTitle).frame(minWidth: 96)
+                Text(primaryTitle).frame(minWidth: 110)
             }
             .buttonStyle(.glassProminent)
             .tint(Brand.teal)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
         }
-        .padding(.horizontal, 30)
-        .padding(.top, 10)
-        .padding(.bottom, 18)
+        .padding(.horizontal, 28)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
     }
 
     private var primaryTitle: String {

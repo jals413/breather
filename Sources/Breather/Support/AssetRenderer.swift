@@ -35,7 +35,7 @@ enum AssetRenderer {
         }
         if let i = args.firstIndex(of: "--render-welcome"), i + 2 < args.count,
            let step = Int(args[i + 2]).flatMap(WelcomeView.Step.init(rawValue:)) {
-            renderWindow(WelcomeView(app: AppModel.shared, onDone: {}, step: step), size: NSSize(width: 820, height: 640),
+            renderWindow(WelcomeView(app: AppModel.shared, onDone: {}, step: step), size: NSSize(width: 640, height: 720),
                          to: URL(fileURLWithPath: args[i + 1]))
             return
         }

@@ -8,7 +8,7 @@ All notable changes to Breather. The format follows [Keep a Changelog](https://k
 - "Update Now" in Settings › About and in the notch downloads the new version, checks its SHA-256 checksum and signature, swaps it in and reopens Breather.
 
 ### Welcome
-- The setup now uses the same sidebar and cards as Settings, and asks when you count as away.
+- Each setup step now uses the same header and grouped cards as Settings, and the setup asks when you count as away.
 
 ### Break screen
 - Five distinct themes: Ocean Calm, Forest, Sunset Glow, Midnight Minimal and Paper.
