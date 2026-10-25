@@ -90,7 +90,7 @@ struct BreakScreen: View {
         return VStack(spacing: 30) {
             if appearance.showClock {
                 Text(now, format: .dateTime.hour().minute())
-                    .font(.system(size: 15, weight: .medium, design: appearance.timerDesign.design))
+                    .font(.system(size: 15, weight: .medium, design: appearance.messageDesign.design))
                     .monospacedDigit()
                     .foregroundStyle(text.opacity(0.6))
             }
@@ -99,7 +99,7 @@ struct BreakScreen: View {
                     BreatherMark(color: text.opacity(0.75), rippleOpacity: 0.6)
                         .frame(width: 18, height: 18)
                     Text((session.title ?? session.kind.title).uppercased())
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold, design: appearance.messageDesign.design))
                         .tracking(3)
                 }
                 .foregroundStyle(text.opacity(0.65))
@@ -115,7 +115,7 @@ struct BreakScreen: View {
             .frame(minHeight: appearance.timerStyle == .hidden ? 80 : nil)
 
             if appearance.showBreathingCue {
-                BreathingCue(now: now, color: text)
+                BreathingCue(now: now, color: text, design: appearance.messageDesign.design)
             }
 
             if appearance.showMessage, !session.message.isEmpty {
@@ -132,7 +132,7 @@ struct BreakScreen: View {
 
             if appearance.showHint {
                 Text(hint)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, design: appearance.messageDesign.design))
                     .foregroundStyle(text.opacity(0.45))
             }
         }
@@ -166,7 +166,7 @@ struct BreakScreen: View {
         }
         .buttonStyle(.glass)
         .controlSize(.large)
-        .font(.system(size: 14, weight: .semibold))
+        .font(.system(size: 14, weight: .semibold, design: appearance.messageDesign.design))
         .foregroundStyle(text)
     }
 
@@ -253,11 +253,12 @@ private struct TimerView: View {
 private struct BreathingCue: View {
     var now: Date
     var color: Color
+    var design: Font.Design = .default
 
     var body: some View {
         let inhale = BreathCycle.inhaling(at: now)
         Text(inhale ? "Breathe in" : "Breathe out")
-            .font(.system(size: 18, weight: .medium))
+            .font(.system(size: 18, weight: .medium, design: design))
             .foregroundStyle(color.opacity(0.75))
             .contentTransition(.opacity)
             .animation(.easeInOut(duration: 0.6), value: inhale)
