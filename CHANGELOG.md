@@ -2,7 +2,7 @@
 
 All notable changes to Breather. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] - 2026-10-25
 
 ### Break screen
 - The clock, break name, breathing guide, buttons and hint now use the message font, so each theme reads as one typeface.
