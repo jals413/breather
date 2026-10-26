@@ -76,7 +76,7 @@ The companion apps live in [`Apps/`](Apps) and are built with Xcode. Apple doesn
 scripts/mobile.sh device <YOUR_TEAM_ID>   # installs on your connected iPhone (and its Watch)
 ```
 
-Apps installed with a free Apple ID need reinstalling every 7 days. Blocking apps on your iPhone during breaks (Screen Time) and Apple push are built in but switched off until the project has a paid developer account — see [docs/IPHONE.md](docs/IPHONE.md).
+Apps installed with a free Apple ID need reinstalling every 7 days. Blocking apps on your iPhone during breaks (Screen Time) and Apple push are built in but switched off until the project has a paid developer account.
 
 ## Build from source
 
@@ -115,7 +115,6 @@ $B --animation-test <dir>      # frame-by-frame recording of every notch transit
 | `Tests/` | Engine, routines, link and push-payload tests |
 | `website/` | The project website (GitHub Pages) |
 | `packaging/` | Homebrew cask template |
-| `docs/` | Design notes, the iPhone plan, the LookAway comparison |
 
 ## Contributing
 
