@@ -8,15 +8,15 @@ import Network
 final class LinkClient {
     enum Route: String { case bluetooth = "Bluetooth", network = "Local network" }
 
-    var onMessage: ((Data) -> Void)?
+    var onMessage: ((Data, Route) -> Void)?
     var onRoutesChanged: ((Set<Route>) -> Void)?
     private(set) var routes: Set<Route> = [] { didSet { onRoutesChanged?(routes) } }
 
-    private lazy var ble = BLECentral { [weak self] data in self?.onMessage?(data) } onReady: { [weak self] ready in
+    private lazy var ble = BLECentral { [weak self] data in self?.onMessage?(data, .bluetooth) } onReady: { [weak self] ready in
         guard let self else { return }
         if ready { self.routes.insert(.bluetooth) } else { self.routes.remove(.bluetooth) }
     }
-    private lazy var lan = LANClient { [weak self] data in self?.onMessage?(data) } onReady: { [weak self] ready in
+    private lazy var lan = LANClient { [weak self] data in self?.onMessage?(data, .network) } onReady: { [weak self] ready in
         guard let self else { return }
         if ready { self.routes.insert(.network) } else { self.routes.remove(.network) }
     }
@@ -31,9 +31,15 @@ final class LinkClient {
         foreground ? lan.start() : lan.stop()
     }
 
-    func send(_ data: Data) {
-        if routes.contains(.network) { lan.send(data) }
-        if routes.contains(.bluetooth) { ble.send(data) }
+    /// Sends over one route, or every route that's up.
+    func send(_ data: Data, via route: Route? = nil) {
+        if route != .bluetooth, routes.contains(.network) { lan.send(data) }
+        if route != .network, routes.contains(.bluetooth) { ble.send(data) }
+    }
+
+    /// The paired Mac proved itself on this route (a message decrypted with its key).
+    func verified(_ route: Route) {
+        if route == .bluetooth { ble.remember() }
     }
 }
 
@@ -89,6 +95,13 @@ final class BLECentral: NSObject {
         peripheral = p
         p.delegate = self
     }
+
+    /// Reconnect to this Mac from now on. Only called once it has proved itself, so another
+    /// device advertising Breather's service can't become the phone's Mac.
+    func remember() {
+        guard let peripheral, UserDefaults.standard.string(forKey: Self.knownPeripheralKey) != peripheral.identifier.uuidString else { return }
+        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.knownPeripheralKey)
+    }
 }
 
 extension BLECentral: CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -106,7 +119,6 @@ extension BLECentral: CBCentralManagerDelegate, CBPeripheralDelegate {
         MainActor.assumeIsolated {
             central.stopScan()
             attach(peripheral)
-            UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.knownPeripheralKey)
             central.connect(peripheral)
         }
     }

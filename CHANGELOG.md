@@ -2,6 +2,14 @@
 
 All notable changes to Breather. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+- iPhone link: pairing no longer sends a secret over the air. The phone and Mac agree on a key tied to the code, and each code allows one attempt, so it can't be guessed or sniffed. The QR code carries a longer key.
+- Every phone has its own key and every message is encrypted and can't be replayed. Your stats (including websites) are no longer readable by other devices on your network or nearby over Bluetooth. Forgetting a phone now cuts it off even when other phones stay paired.
+- `breather://` links: break and snooze lengths are capped at 60 minutes and pauses at 24 hours, and `breather://pair` opens Settings instead of starting pairing. Lengths sent from the phone are capped the same way.
+- Phones paired with an earlier version need to pair again.
+
 ## [1.0.1] - 2026-10-25
 
 ### Break screen

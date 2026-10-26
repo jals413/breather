@@ -702,7 +702,7 @@ private struct AutomationsPane: View {
 
     static let commands: [(String, String)] = [
         ("breather://break", "Break now"),
-        ("breather://break?minutes=10", "Break of any length"),
+        ("breather://break?minutes=10", "Break of 1–60 minutes"),
         ("breather://long-break", "Long break"),
         ("breather://pause?minutes=30", "Pause (omit minutes: until resumed)"),
         ("breather://resume", "Resume"),

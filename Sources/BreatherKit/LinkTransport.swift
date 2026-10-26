@@ -11,6 +11,8 @@ public enum LinkConstants {
     /// Phone → Mac: write.
     public static let inboxUUID = "6B1E4A10-2C77-4E0B-9F3A-9B7C2B0E1A03"
     public static let pairingCodeLength = 6
+    /// Bumped whenever the wire format changes; part of every encrypted message's header.
+    public static let protocolVersion = 2
     public static let maxPairedDevices = 3
 }
 

@@ -111,12 +111,18 @@ private struct PairingRow: View {
                     let left = max(0, expires.timeIntervalSince(context.date))
                     Text(left > 0 ? "Expires in \(Int(left))s" : "Expired").font(.caption).foregroundStyle(.secondary)
                 }
+                if let status = phone.pairingStatus {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                }
                 Button("Cancel") { phone.cancelPairing() }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
         } else {
             HStack {
+                if let status = phone.pairingStatus {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button("Pair a New iPhone…") { phone.startPairing() }
                     .disabled(phone.devices.count >= LinkConstants.maxPairedDevices)

@@ -243,10 +243,17 @@ final class AppModel {
         case .breakNow: breakNow()
         case .longBreak: engine.startBreak(kind: .long)
         case .setProfile(let id): if let uuid = UUID(uuidString: id) { applyProfile(uuid) }
-        case .breakFor(let minutes): customBreak(minutes: minutes)
-        case .snooze(let minutes): snooze(minutes * 60)
+        case .breakFor(let minutes):
+            if let minutes = Self.clamp(minutes, to: Self.breakMinutes) { customBreak(minutes: minutes) }
+        case .snooze(let minutes):
+            if let minutes = Self.clamp(minutes, to: Self.snoozeMinutes) { snooze(minutes * 60) }
         case .skipNext: if !engine.skipNextPending { engine.toggleSkipNext() }
-        case .pause(let minutes): engine.pause(for: minutes.map { $0 * 60 })
+        case .pause(let minutes):
+            if let minutes {
+                if let minutes = Self.clamp(minutes, to: Self.pauseMinutes) { engine.pause(for: minutes * 60) }
+            } else {
+                engine.pause(for: nil)
+            }
         case .resume: resume()
         case .endBreak: skipOrEndBreak()
         }
@@ -255,17 +262,32 @@ final class AppModel {
 
     // MARK: URL scheme
 
+    /// Limits for lengths that arrive from links or paired devices, in minutes.
+    static let breakMinutes: ClosedRange<Double> = 1...60
+    static let snoozeMinutes: ClosedRange<Double> = 1...60
+    static let pauseMinutes: ClosedRange<Double> = 1...(24 * 60)
+
+    /// The value kept within `range`, or nil when it's missing or not a number.
+    static func clamp(_ minutes: Double?, to range: ClosedRange<Double>) -> Double? {
+        guard let minutes, minutes.isFinite else { return nil }
+        return min(max(minutes, range.lowerBound), range.upperBound)
+    }
+
     /// breather://break[?minutes=N], long-break, pause[?minutes=N], resume, skip-next,
-    /// profile?name=…, settings, stats
+    /// profile?name=…, pair (opens the iPhone pane), settings, stats
+    ///
+    /// Any web page can open these links, so lengths are kept to what Settings allows.
     func handle(url: URL) {
         guard url.scheme == "breather" else { return }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         let minutes = items.first { $0.name == "minutes" }?.value.flatMap(Double.init)
         switch url.host() ?? "" {
-        case "break": engine.startBreak(kind: minutes == nil ? nil : .custom, duration: minutes.map { $0 * 60 })
+        case "break":
+            let length = Self.clamp(minutes, to: Self.breakMinutes)
+            engine.startBreak(kind: length == nil ? nil : .custom, duration: length.map { $0 * 60 })
         case "long-break": engine.startBreak(kind: .long)
         case "pause":
-            engine.pause(for: minutes.map { $0 * 60 })
+            engine.pause(for: Self.clamp(minutes, to: Self.pauseMinutes).map { $0 * 60 })
         case "resume": resume()
         case "skip-next": if !engine.skipNextPending { engine.toggleSkipNext() }
         case "profile":
@@ -274,8 +296,7 @@ final class AppModel {
                 applyProfile(p.id)
             }
         case "pair":
-            store.settings.phoneLinkEnabled = true
-            phone.startPairing()
+            // Pairing starts only from the button there, never from a link.
             openSettings(.devices)
         case "settings": openSettings()
         case "stats": openStats()

@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 /// What the Mac tells its paired iPhone / Watch. Compact on purpose: it travels over Bluetooth.
 public struct MacState: Codable, Equatable, Sendable {
@@ -176,29 +176,6 @@ public enum PhoneCommand: Codable, Equatable, Sendable {
     case endBreak
 }
 
-public struct PairRequest: Codable, Equatable, Sendable {
-    public var code: String
-    public var deviceID: String
-    public var deviceName: String
-    public init(code: String, deviceID: String, deviceName: String) {
-        self.code = code
-        self.deviceID = deviceID
-        self.deviceName = deviceName
-    }
-}
-
-public struct PairAccepted: Codable, Equatable, Sendable {
-    /// Shared secret for signing every later message (base64).
-    public var secret: String
-    public var macID: String
-    public var macName: String
-    public init(secret: String, macID: String, macName: String) {
-        self.secret = secret
-        self.macID = macID
-        self.macName = macName
-    }
-}
-
 /// Push credentials the phone hands the Mac (paid builds only).
 public struct PushTokens: Codable, Equatable, Sendable {
     public var deviceToken: String?
@@ -213,12 +190,10 @@ public struct PushTokens: Codable, Equatable, Sendable {
     }
 }
 
+/// What paired devices say to each other. Always travels encrypted (see `LinkCrypto`).
 public enum LinkMessage: Codable, Equatable, Sendable {
-    case pairRequest(PairRequest)
-    case pairAccepted(PairAccepted)
-    case pairRejected(reason: String)
-    /// Phone → Mac: "I'm here, send me the current state."
-    case hello(deviceID: String, deviceName: String)
+    /// Phone → Mac: "I'm here, send me the current state." Also marks the connection as this phone's.
+    case hello(deviceName: String)
     case state(MacState)
     case command(PhoneCommand)
     case tokens(PushTokens)
@@ -228,33 +203,6 @@ public enum LinkMessage: Codable, Equatable, Sendable {
     case stats(StatsSnapshot)
     /// Mac → phone: a small PNG app icon for the Stats dashboard, sent once per app.
     case appIcon(id: String, png: Data)
-}
-
-/// A message on the wire. Pairing messages travel unsigned; everything after is HMAC-signed
-/// with the secret agreed during pairing, so nearby devices can't spoof breaks or commands.
-public struct LinkEnvelope: Codable, Sendable {
-    public var body: Data
-    public var signature: Data?
-
-    public static func seal(_ message: LinkMessage, secret: SymmetricKey?) throws -> Data {
-        let body = try LinkCoding.encoder.encode(message)
-        let signature = secret.map { Data(HMAC<SHA256>.authenticationCode(for: body, using: $0)) }
-        return try LinkCoding.encoder.encode(LinkEnvelope(body: body, signature: signature))
-    }
-
-    /// Returns the message if it's a pairing message or correctly signed.
-    public static func open(_ data: Data, secret: SymmetricKey?) -> LinkMessage? {
-        guard let envelope = try? LinkCoding.decoder.decode(LinkEnvelope.self, from: data),
-              let message = try? LinkCoding.decoder.decode(LinkMessage.self, from: envelope.body) else { return nil }
-        switch message {
-        case .pairRequest, .pairAccepted, .pairRejected:
-            return message
-        default:
-            guard let secret, let signature = envelope.signature,
-                  HMAC<SHA256>.isValidAuthenticationCode(signature, authenticating: envelope.body, using: secret) else { return nil }
-            return message
-        }
-    }
 }
 
 public enum LinkCoding {

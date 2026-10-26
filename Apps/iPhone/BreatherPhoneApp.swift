@@ -13,16 +13,15 @@ struct BreatherPhoneApp: App {
             RootView(model: model)
                 .tint(Brand.mint)
                 .preferredColorScheme(.dark)  // Breather is a night brand on every device
-                // breather-phone://pair?code=123456 — from the QR code on the Mac.
+                // breather-phone://pair?code=123456&key=… — from the QR code on the Mac.
                 .onOpenURL { url in
                     if url.host() == "stats" || url.host() == "home" {
                         model.selectedTab = url.host() == "stats" ? .stats : .home
                         return
                     }
-                    guard url.host() == "pair",
-                          let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                            .queryItems?.first(where: { $0.name == "code" })?.value else { return }
-                    model.pair(code: code)
+                    let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                    guard url.host() == "pair", let code = items.first(where: { $0.name == "code" })?.value else { return }
+                    model.pair(code: code, qrKey: items.first(where: { $0.name == "key" })?.value)
                 }
         }
         .onChange(of: scenePhase) { _, phase in

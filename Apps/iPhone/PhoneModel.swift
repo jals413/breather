@@ -9,7 +9,10 @@ import WidgetKit
 struct PairedMac: Codable, Equatable {
     var id: String
     var name: String
-    var secret: String
+    /// This phone's own link key with the Mac (base64), agreed during pairing.
+    var key: String
+    /// Counters already accepted from the Mac, so a captured message can't be replayed.
+    var received = ReplayGuard()
 }
 
 /// The phone mirrors the Mac: it never decides breaks, it reflects them on the Lock Screen,
@@ -33,6 +36,8 @@ final class PhoneModel {
     /// Connected, but the Mac no longer accepts our messages (it was reset or unpaired us).
     private(set) var needsRepair = false
     @ObservationIgnored private var lastVerified = Date.distantPast
+    @ObservationIgnored private var attempt: PhonePairing?
+    @ObservationIgnored private var counter = LinkCounter()
 
     var liveActivityEnabled = UserDefaults.standard.object(forKey: "liveActivity") as? Bool ?? true {
         didSet { UserDefaults.standard.set(liveActivityEnabled, forKey: "liveActivity"); syncSurfaces(previous: state) }
@@ -57,18 +62,19 @@ final class PhoneModel {
             deviceID = UUID().uuidString
             UserDefaults.standard.set(deviceID, forKey: "deviceID")
         }
+        // A Mac paired by an older build (one shared secret) doesn't decode, so it pairs again.
         if let data = UserDefaults.standard.data(forKey: Self.macKey) {
             mac = try? JSONDecoder().decode(PairedMac.self, from: data)
         }
     }
 
-    var secret: SymmetricKey? { mac.flatMap { SymmetricKey(base64: $0.secret) } }
+    private var keys: LinkKeys? { mac.flatMap { SymmetricKey(base64: $0.key) }.map(LinkKeys.init) }
     var isConnected: Bool { !routes.isEmpty }
 
     /// `-BreatherDemo` (or `-BreatherDemoBreak`) fills the app with sample data for screenshots.
     /// Nothing real is shown and nothing connects.
     private func startDemo(onBreak: Bool) {
-        mac = PairedMac(id: "demo", name: "MacBook Pro", secret: "")
+        mac = PairedMac(id: "demo", name: "MacBook Pro", key: "")
         routes = [.bluetooth]
         watchConnected = true
         let profiles = [ProfileSummary(id: "1", name: "Everyday", symbol: "sun.max.fill"),
@@ -102,19 +108,25 @@ final class PhoneModel {
             startDemo(onBreak: args.contains("-BreatherDemoBreak"))
             return
         }
-        link.onMessage = { [weak self] data in self?.receive(data) }
+        link.onMessage = { [weak self] data, route in self?.receive(data, via: route) }
         link.onRoutesChanged = { [weak self] routes in
             guard let self else { return }
             let wasEmpty = self.routes.isEmpty
+            let added = routes.subtracting(self.routes)
             self.routes = routes
-            if wasEmpty && !routes.isEmpty { self.sayHello() }
+            if wasEmpty && !routes.isEmpty {
+                self.sayHello()
+            } else {
+                // The Mac only sends over a connection once we've said hello on it.
+                for route in added { self.sendSealed(.hello(deviceName: UIDevice.current.name), via: route) }
+            }
         }
         watch.onCommand = { [weak self] command in self?.send(command) }
         watch.onStatusChanged = { [weak self] connected in
             self?.watchConnected = connected
-            self?.sendSigned(.deviceStatus(watchConnected: connected))
+            self?.sendSealed(.deviceStatus(watchConnected: connected))
         }
-        liveActivity.onTokens = { [weak self] tokens in self?.sendSigned(.tokens(tokens)) }
+        liveActivity.onTokens = { [weak self] tokens in self?.sendSealed(.tokens(tokens)) }
         link.start()
         watch.activate()
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .timeSensitive]) { _, _ in }
@@ -132,23 +144,31 @@ final class PhoneModel {
 
     // MARK: Pairing
 
-    func pair(code: String) {
-        guard code.count == LinkConstants.pairingCodeLength else { return }
+    /// Pairs with the typed code, or with the QR code's long key when scanned (`qrKey`).
+    func pair(code: String, qrKey: String? = nil) {
+        guard code.count == LinkConstants.pairingCodeLength || qrKey?.isEmpty == false else { return }
+        let pairing = PhonePairing(secret: qrKey ?? code, usesQRKey: qrKey != nil, deviceID: deviceID, deviceName: UIDevice.current.name)
+        attempt = pairing
         isPairing = true
         pairingStatus = isConnected ? "Pairing…" : "Looking for your Mac…"
-        let request = PairRequest(code: code, deviceID: deviceID, deviceName: UIDevice.current.name)
-        if let data = try? LinkEnvelope.seal(.pairRequest(request), secret: nil) { link.send(data) }
-        // Retry once the link comes up if we weren't connected yet.
+        guard let start = try? LinkPacket.pairing(.start(pairing.start)).encoded() else { return }
+        link.send(start)
+        // Retry once the link comes up if we weren't connected yet, until the Mac answers.
         Task {
-            for _ in 0..<10 where isPairing && mac == nil {
+            for _ in 0..<10 where isPairing && attempt?.start == pairing.start && attempt?.macKey == nil {
                 try? await Task.sleep(for: .seconds(2))
-                if isConnected, let data = try? LinkEnvelope.seal(.pairRequest(request), secret: nil) { link.send(data) }
+                if isConnected, attempt?.start == pairing.start, attempt?.macKey == nil { link.send(start) }
             }
-            if mac == nil && isPairing {
-                isPairing = false
-                pairingStatus = "Couldn't reach your Mac. Make sure Breather is open there and both have Bluetooth on."
+            if isPairing && attempt?.start == pairing.start && mac == nil {
+                stopPairing("Couldn't reach your Mac. Make sure Breather is open there and both have Bluetooth on.")
             }
         }
+    }
+
+    private func stopPairing(_ status: String?) {
+        attempt = nil
+        isPairing = false
+        pairingStatus = status
     }
 
     func unpair() {
@@ -167,17 +187,21 @@ final class PhoneModel {
     // MARK: Commands
 
     func send(_ command: PhoneCommand) {
-        sendSigned(.command(command))
+        sendSealed(.command(command))
     }
 
-    private func sendSigned(_ message: LinkMessage) {
-        guard let secret, let data = try? LinkEnvelope.seal(message, secret: secret) else { return }
-        link.send(data)
+    /// Encrypts once and sends over every route; the Mac acts on whichever copy arrives first.
+    private func sendSealed(_ message: LinkMessage, via route: LinkClient.Route? = nil) {
+        guard let keys,
+              let data = try? LinkCrypto.seal(message, keys: keys, direction: .phoneToMac, sender: deviceID, counter: counter.next())
+        else { return }
+        link.send(data, via: route)
     }
 
     private func sayHello() {
-        sendSigned(.hello(deviceID: deviceID, deviceName: UIDevice.current.name))
-        sendSigned(.deviceStatus(watchConnected: watch.isWatchConnected))
+        // Separately on each route, so the Mac recognizes each connection as ours.
+        for route in link.routes { sendSealed(.hello(deviceName: UIDevice.current.name), via: route) }
+        sendSealed(.deviceStatus(watchConnected: watch.isWatchConnected))
         // The Mac answers a hello with its state. Hearing nothing verifiable since then,
         // while connected, means it forgot us.
         let saidHello = Date.now
@@ -189,26 +213,55 @@ final class PhoneModel {
 
     // MARK: Incoming
 
-    private func receive(_ data: Data) {
-        guard let message = LinkEnvelope.open(data, secret: secret) else { return }
-        if case .state = message {
-            lastVerified = .now
-            needsRepair = false
+    private func receive(_ data: Data, via route: LinkClient.Route) {
+        switch LinkPacket.decode(data) {
+        case .pairing(let message): handlePairing(message, via: route)
+        case .sealed(let sealed): handleSealed(sealed, via: route)
+        case nil: break
         }
+    }
+
+    private func handlePairing(_ message: PairMessage, via route: LinkClient.Route) {
+        guard isPairing, var pairing = attempt else { return }
         switch message {
-        case .pairAccepted(let accepted):
-            guard isPairing else { return }
-            let paired = PairedMac(id: accepted.macID, name: accepted.macName, secret: accepted.secret)
+        case .challenge(let challenge):
+            guard challenge.deviceID == deviceID, pairing.macKey == nil else { return }
+            guard let reveal = pairing.answer(challenge) else {
+                // Wrong code, or not our Mac. Reveal nothing, and end the attempt on the Mac too.
+                if let cancel = try? LinkPacket.pairing(.cancel(deviceID: deviceID)).encoded() { link.send(cancel, via: route) }
+                return stopPairing("That code doesn't match your Mac's. Start pairing again on your Mac.")
+            }
+            attempt = pairing
+            pairingStatus = "Pairing…"
+            // Only to the Mac that proved it knows the code.
+            if let data = try? LinkPacket.pairing(reveal).encoded() { link.send(data, via: route) }
+        case .accepted(let accepted):
+            guard let key = pairing.finish(accepted) else { return }
+            let paired = PairedMac(id: accepted.macID, name: accepted.macName, key: key.base64)
             mac = paired
-            if let encoded = try? JSONEncoder().encode(paired) { UserDefaults.standard.set(encoded, forKey: Self.macKey) }
-            isPairing = false
-            pairingStatus = nil
+            saveMac()
+            stopPairing(nil)
+            link.verified(route)
             sayHello()
             liveActivity.sendTokensIfAvailable()
-        case .pairRejected(let reason):
-            guard isPairing else { return }
-            isPairing = false
-            pairingStatus = reason
+        case .rejected(let reason):
+            guard pairing.macKey == nil else { return }
+            stopPairing(reason)
+        case .start, .reveal, .cancel:
+            break
+        }
+    }
+
+    private func handleSealed(_ sealed: SealedMessage, via route: LinkClient.Route) {
+        guard var paired = mac, sealed.sender == paired.id, let keys,
+              let message = LinkCrypto.open(sealed, keys: keys, direction: .macToPhone),
+              paired.received.accept(sealed.counter) else { return }
+        mac = paired
+        saveMac()
+        link.verified(route)
+        lastVerified = .now
+        needsRepair = false
+        switch message {
         case .state(let newState):
             apply(newState)
         case .stats(let snapshot):
@@ -222,6 +275,10 @@ final class PhoneModel {
         default:
             break
         }
+    }
+
+    private func saveMac() {
+        if let encoded = try? JSONEncoder().encode(mac) { UserDefaults.standard.set(encoded, forKey: Self.macKey) }
     }
 
     func apply(_ newState: MacState) {
